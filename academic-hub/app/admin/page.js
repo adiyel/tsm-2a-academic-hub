@@ -426,4 +426,107 @@ function AnnouncementsPanel() {
             <textarea
               className="textarea"
               value={form.body}
-              onChange={(e) => setForm({ ...form
+              onChange={(e) => setForm({ ...form, body: e.target.value })}
+              required
+            />
+          </div>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, fontSize: '.88rem' }}>
+            <input
+              type="checkbox"
+              checked={form.pinned}
+              onChange={(e) => setForm({ ...form, pinned: e.target.checked })}
+            />
+            Pin to the top
+          </label>
+          <button className="btn btn-primary" type="submit">Post announcement</button>
+        </form>
+      </section>
+
+      <section className="card">
+        <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: 'var(--navy)' }}>Existing announcements</h2>
+        {items === null ? (
+          <p className="note">Loading…</p>
+        ) : items.length === 0 ? (
+          <p className="note">None yet.</p>
+        ) : (
+          items.map((a) => (
+            <div className="review-item" key={a.id}>
+              <div className="rq">{a.pinned ? '📌 ' : ''}{a.title}</div>
+              <div className="ra">{a.body}</div>
+              <div style={{ marginTop: 10 }}>
+                <button className="btn btn-danger btn-sm" onClick={() => remove(a.id)}>Delete</button>
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+    </>
+  );
+}
+
+function ScoresPanel() {
+  const [items, setItems] = useState(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch('/api/scores?limit=200', { cache: 'no-store' });
+    const data = await res.json();
+    setItems(data.scores || []);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function remove(id) {
+    if (!confirm('Remove this entry from the leaderboard?')) return;
+    await fetch(`/api/scores/${id}`, { method: 'DELETE' });
+    load();
+  }
+
+  async function clearAll() {
+    if (!confirm('Delete ALL leaderboard entries? This cannot be undone.')) return;
+    await fetch('/api/scores', { method: 'DELETE' });
+    load();
+  }
+
+  return (
+    <section className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <h2 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--navy)' }}>Leaderboard entries</h2>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost btn-sm" onClick={load}>Refresh ↻</button>
+          <button className="btn btn-danger btn-sm" onClick={clearAll}>Clear all</button>
+        </div>
+      </div>
+
+      {items === null ? (
+        <p className="note">Loading…</p>
+      ) : items.length === 0 ? (
+        <p className="note">No scores submitted yet.</p>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Score</th>
+              <th>%</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((s, i) => (
+              <tr key={s.id}>
+                <td>{i + 1}</td>
+                <td style={{ fontWeight: 700 }}>{s.name}</td>
+                <td>{s.score}/{s.total}</td>
+                <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
+                <td style={{ textAlign: 'right' }}>
+                  <button className="btn btn-danger btn-sm" onClick={() => remove(s.id)}>Remove</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
