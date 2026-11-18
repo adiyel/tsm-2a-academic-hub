@@ -516,7 +516,9 @@ function ScoresPanel() {
             {items.map((s, i) => (
               <tr key={s.id}>
                 <td>{i + 1}</td>
-                <td style={{ fontWeight: 700 }}>{s.name}</td>
+                <td style={{ fontWeight: 700 }}>
+                  {s.name} {s.isAnonymous && <span className="note">(Hidden)</span>}
+                </td>
                 <td>{s.score}/{s.total}</td>
                 <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
                 <td style={{ textAlign: 'right' }}>
