@@ -30,10 +30,11 @@ export default async function QuizMenuPage() {
     groupedByDate[dateStr].push(q);
   });
 
-  // Nearest exam for the countdown banner
-  const nearestExam = upcoming[0];
-  const daysUntil = nearestExam 
-    ? Math.ceil((new Date(nearestExam.date) - now) / (1000 * 60 * 60 * 24))
+  // Nearest exams for the countdown banner
+  const nextExamDate = upcoming[0]?.date;
+  const nextExams = upcoming.filter(q => q.date === nextExamDate);
+  const daysUntil = nextExamDate 
+    ? Math.ceil((new Date(nextExamDate) - now) / (1000 * 60 * 60 * 24))
     : null;
 
   return (
@@ -44,21 +45,27 @@ export default async function QuizMenuPage() {
         <p>Prepare for upcoming scheduled exams or practice anytime with general quizzes.</p>
       </header>
 
-      {/* 3. COUNTDOWN WIDGET */}
-      {nearestExam && daysUntil !== null && daysUntil >= 0 && (
+      {/* COUNTDOWN WIDGET */}
+      {nextExams.length > 0 && daysUntil !== null && daysUntil >= 0 && (
         <div className="card" style={{ background: 'var(--navy)', color: 'white', marginBottom: 24, textAlign: 'center', border: '1px solid #246b91' }}>
-          <div className="eyebrow" style={{ color: '#b8d9e9' }}>Next Scheduled Event</div>
-          <h2 style={{ margin: '8px 0', fontSize: '1.5rem' }}>{nearestExam.title}</h2>
+          <div className="eyebrow" style={{ color: '#b8d9e9' }}>Next Scheduled Event{daysUntil === 0 ? ' (TODAY)' : ''}</div>
+          
+          <div style={{ margin: '12px 0' }}>
+            {nextExams.map(ex => (
+              <h2 key={ex.title} style={{ margin: '8px 0', fontSize: '1.4rem' }}>{ex.title}</h2>
+            ))}
+          </div>
+
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '-1px' }}>
             {daysUntil === 0 ? 'TODAY' : `${daysUntil} Day${daysUntil === 1 ? '' : 's'} Left`}
           </div>
           <p style={{ margin: 0, opacity: 0.8, fontWeight: 'bold' }}>
-            {new Date(nearestExam.date).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+            {new Date(nextExamDate).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
       )}
 
-      {/* 1 & 2. SCHEDULED ASSESSMENTS (Grouped by Date Folders) */}
+      {/* SCHEDULED ASSESSMENTS (Grouped by Date Folders) */}
       {upcoming.length > 0 && (
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: '1.2rem', color: 'var(--navy)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -66,8 +73,8 @@ export default async function QuizMenuPage() {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {Object.entries(groupedByDate).map(([dateStr, exams]) => (
-              <details key={dateStr} open style={{ background: 'white', borderRadius: 12, border: '1px solid var(--line)', overflow: 'hidden' }}>
-                <summary style={{ padding: '14px 16px', cursor: 'pointer', fontWeight: 800, color: 'var(--navy)', background: '#f8fbfd', borderBottom: '1px solid var(--line)' }}>
+              <details key={dateStr} open style={{ background: 'var(--paper)', borderRadius: 12, border: '1px solid var(--line)', overflow: 'hidden' }}>
+                <summary style={{ padding: '14px 16px', cursor: 'pointer', fontWeight: 800, color: 'var(--navy)', background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
                   📁 {dateStr}
                 </summary>
                 <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -150,7 +157,7 @@ function QuizCard({ quiz, isPractice }) {
       border: '1px solid var(--line)', borderRadius: 10,
       borderLeft: `4px solid ${borderColor}`,
       transition: 'background 0.15s',
-      background: 'white'
+      background: 'var(--paper)'
     }}>
       <div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
