@@ -25,7 +25,7 @@ export async function POST(req) {
       `;
       created++;
     } catch (e) {
-      // Ignore duplicates and continue
+      // Ignore duplicates
     }
   }
 

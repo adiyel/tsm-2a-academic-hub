@@ -2,14 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-const BLANK_QUESTION = {
-  topic: 'Queues',
-  question: '',
-  options: ['', '', '', ''],
-  answerIndex: 0,
-  explanation: '',
-};
-
 export default function AdminPage() {
   const [checking, setChecking] = useState(true);
   const [admin, setAdmin] = useState(false);
@@ -28,18 +20,11 @@ export default function AdminPage() {
 
   useEffect(() => { check(); }, [check]);
 
-  if (checking) {
-    return <section className="card"><p className="note">Checking access…</p></section>;
-  }
-
-  if (!admin) {
-    return <LoginForm onSuccess={check} />;
-  }
+  if (checking) return <section className="card"><p className="note">Checking access…</p></section>;
+  if (!admin) return <LoginForm onSuccess={check} />;
 
   return <Dashboard onLogout={check} />;
 }
-
-/* ------------------------------- login ------------------------------- */
 
 function LoginForm({ onSuccess }) {
   const [password, setPassword] = useState('');
@@ -83,29 +68,16 @@ function LoginForm({ onSuccess }) {
           {error && <div className="error">{error}</div>}
           <div className="field">
             <label htmlFor="admin-password">Admin password</label>
-            <input
-              id="admin-password"
-              type="password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
+            <input id="admin-password" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
           </div>
           <button className="btn btn-primary" type="submit" disabled={busy} style={{ width: '100%' }}>
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-        <p className="note" style={{ marginTop: 14 }}>
-          Sessions last 8 hours and are stored in an HTTP-only signed cookie.
-        </p>
       </section>
     </>
   );
 }
-
-/* ----------------------------- dashboard ----------------------------- */
 
 function Dashboard({ onLogout }) {
   const [tab, setTab] = useState('questions');
@@ -123,24 +95,18 @@ function Dashboard({ onLogout }) {
         <p>Manage the question bank, announcements, and leaderboard for TSM 2A.</p>
         <div className="pills">
           <span className="pill">Signed in as admin</span>
-          <button className="pill" onClick={logout} style={{ cursor: 'pointer', font: 'inherit' }}>
-            Sign out →
-          </button>
+          <button className="pill" onClick={logout} style={{ cursor: 'pointer', font: 'inherit' }}>Sign out →</button>
         </div>
       </header>
 
       <div className="tabs">
         {[
-          ['questions', 'Questions'],
+          ['questions', 'Exams & Quizzes'],
           ['announcements', 'Announcements'],
           ['students', 'Students'],
           ['scores', 'Leaderboard'],
         ].map(([key, label]) => (
-          <button
-            key={key}
-            className={`tab${tab === key ? ' active' : ''}`}
-            onClick={() => setTab(key)}
-          >
+          <button key={key} className={`tab${tab === key ? ' active' : ''}`} onClick={() => setTab(key)}>
             {label}
           </button>
         ))}
@@ -155,213 +121,118 @@ function Dashboard({ onLogout }) {
 }
 
 function QuestionsPanel() {
-  const [items, setItems] = useState(null);
-  const [form, setForm] = useState(BLANK_QUESTION);
+  const [exams, setExams] = useState(null);
+  const [jsonInput, setJsonInput] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [bulk, setBulk] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch('/api/questions?all=1', { cache: 'no-store' });
     const data = await res.json();
-    setItems(data.questions || []);
+    
+    const grouped = {};
+    (data.questions || []).forEach(q => {
+      const id = q.examId || 'unscheduled';
+      if (!grouped[id]) {
+        grouped[id] = {
+          id: id,
+          title: q.quizTitle || 'Unscheduled Questions',
+          subject: q.topic,
+          type: q.examType || 'Mock Quiz',
+          date: q.examDate,
+          count: 0
+        };
+      }
+      grouped[id].count++;
+    });
+    
+    setExams(Object.values(grouped).sort((a, b) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(a.date) - new Date(b.date);
+    }));
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  function setOption(i, value) {
-    setForm((f) => {
-      const options = [...f.options];
-      options[i] = value;
-      return { ...f, options };
-    });
-  }
-
-  async function addQuestion(e) {
+  async function handleImport(e) {
     e.preventDefault();
     setBusy(true);
     setMessage({ type: '', text: '' });
+    
     try {
+      const parsed = JSON.parse(jsonInput);
       const res = await fetch('/api/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(parsed),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'Could not add the question.' });
-        return;
-      }
-      setForm({ ...BLANK_QUESTION, topic: form.topic });
-      setMessage({ type: 'success', text: 'Question added.' });
-      load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function importBulk(e) {
-    e.preventDefault();
-    setBusy(true);
-    setMessage({ type: '', text: '' });
-    try {
-      let parsed;
-      try {
-        parsed = JSON.parse(bulk);
-      } catch {
-        setMessage({ type: 'error', text: 'That is not valid JSON.' });
-        return;
-      }
-      const payload = Array.isArray(parsed) ? parsed : [parsed];
-      const res = await fetch('/api/questions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      
       if (!res.ok) {
         setMessage({ type: 'error', text: data.error || 'Import failed.' });
-        return;
+      } else {
+        setJsonInput('');
+        setMessage({ type: 'success', text: 'Exam imported successfully!' });
+        load();
       }
-      setBulk('');
-      setMessage({ type: 'success', text: `${data.count} question(s) imported.` });
-      load();
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Invalid JSON format.' });
     } finally {
       setBusy(false);
     }
   }
 
-  async function toggle(q) {
-    await fetch(`/api/questions/${q.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active: !q.active }),
-    });
-    load();
-  }
-
-  async function remove(q) {
-    if (!confirm('Delete this question permanently?')) return;
-    await fetch(`/api/questions/${q.id}`, { method: 'DELETE' });
+  async function removeExam(id) {
+    if (!confirm('Delete this entire exam and all its questions?')) return;
+    await fetch(`/api/questions/${id}`, { method: 'DELETE' });
     load();
   }
 
   return (
     <>
       <section className="card">
-        <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: 'var(--navy)' }}>Add a question</h2>
+        <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: 'var(--navy)' }}>Import Exam (JSON)</h2>
         {message.text && <div className={message.type === 'error' ? 'error' : 'success'}>{message.text}</div>}
-        <form onSubmit={addQuestion}>
-          <div className="row2">
-            <div className="field">
-              <label>Topic</label>
-              <input
-                className="input"
-                value={form.topic}
-                onChange={(e) => setForm({ ...form, topic: e.target.value })}
-                required
-              />
-            </div>
-            <div className="field">
-              <label>Correct answer</label>
-              <select
-                className="select"
-                value={form.answerIndex}
-                onChange={(e) => setForm({ ...form, answerIndex: Number(e.target.value) })}
-              >
-                <option value={0}>A</option>
-                <option value={1}>B</option>
-                <option value={2}>C</option>
-                <option value={3}>D</option>
-              </select>
-            </div>
-          </div>
-
+        
+        <form onSubmit={handleImport}>
           <div className="field">
-            <label>Question</label>
             <textarea
               className="textarea"
-              value={form.question}
-              onChange={(e) => setForm({ ...form, question: e.target.value })}
+              style={{ minHeight: 200, fontFamily: 'ui-monospace, monospace', fontSize: '.82rem' }}
+              value={jsonInput}
+              onChange={(e) => setJsonInput(e.target.value)}
+              placeholder='{ "title": "CCNA Exam", "subject": "Networking", "type": "Mock Examination", "date": "2024-11-24T09:00", "questions": [ ... ] }'
               required
             />
           </div>
-
-          {form.options.map((opt, i) => (
-            <div className="field" key={i}>
-              <label>Option {['A', 'B', 'C', 'D'][i]}</label>
-              <input
-                className="input"
-                value={opt}
-                onChange={(e) => setOption(i, e.target.value)}
-                required
-              />
-            </div>
-          ))}
-
-          <div className="field">
-            <label>Explanation</label>
-            <textarea
-              className="textarea"
-              value={form.explanation}
-              onChange={(e) => setForm({ ...form, explanation: e.target.value })}
-              required
-            />
-          </div>
-
-          <button className="btn btn-primary" type="submit" disabled={busy}>Add question</button>
+          <button className="btn btn-primary" type="submit" disabled={busy || !jsonInput.trim()}>
+            {busy ? 'Importing...' : 'Import Exam'}
+          </button>
         </form>
       </section>
 
       <section className="card">
-        <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: 'var(--navy)' }}>Bulk import (JSON)</h2>
-        <p className="note" style={{ marginTop: 0 }}>
-          Paste an array of objects with <code>topic</code>, <code>question</code>,{' '}
-          <code>options</code> (4 strings), <code>answerIndex</code> (0–3), and <code>explanation</code>.
-        </p>
-        <form onSubmit={importBulk}>
-          <div className="field">
-            <textarea
-              className="textarea"
-              style={{ minHeight: 140, fontFamily: 'ui-monospace, monospace', fontSize: '.82rem' }}
-              value={bulk}
-              onChange={(e) => setBulk(e.target.value)}
-              placeholder='[{"topic":"Stacks","question":"…","options":["…","…","…","…"],"answerIndex":1,"explanation":"…"}]'
-            />
-          </div>
-          <button className="btn btn-ghost" type="submit" disabled={busy || !bulk.trim()}>Import</button>
-        </form>
-      </section>
-
-      <section className="card">
-        <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: 'var(--navy)' }}>
-          Question bank {items ? `(${items.length})` : ''}
-        </h2>
-        {items === null ? (
+        <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: 'var(--navy)' }}>Manage Exams</h2>
+        {exams === null ? (
           <p className="note">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="note">No questions yet.</p>
+        ) : exams.length === 0 ? (
+          <p className="note">No exams uploaded yet.</p>
         ) : (
           <div style={{ display: 'grid', gap: 10 }}>
-            {items.map((q) => (
-              <div className="review-item" key={q.id}>
-                <div className="rq">{q.question}</div>
-                <div className="ra" style={{ marginBottom: 6 }}>
-                  <span className="topic">{q.topic}</span>{' '}
-                  <span className={`tag ${q.active ? 'on' : 'off'}`}>
-                    {q.active ? 'Active' : 'Hidden'}
-                  </span>
+            {exams.map((ex) => (
+              <div className="review-item" key={ex.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                    <span className={`tag ${ex.type === 'Mock Examination' ? 'off' : 'on'}`}>{ex.type}</span>
+                    <span className="note">{ex.subject}</span>
+                  </div>
+                  <div className="rq" style={{ marginBottom: 4 }}>{ex.title}</div>
+                  <div className="note">
+                    {ex.date ? new Date(ex.date).toLocaleString() : 'Unscheduled'} · {ex.count} items
+                  </div>
                 </div>
-                <div className="ra">
-                  <strong>Answer:</strong> {q.options[q.answerIndex]}
-                </div>
-                <div className="ra" style={{ marginTop: 4 }}>{q.explanation}</div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => toggle(q)}>
-                    {q.active ? 'Hide' : 'Activate'}
-                  </button>
-                  <button className="btn btn-danger btn-sm" onClick={() => remove(q)}>Delete</button>
-                </div>
+                <button className="btn btn-danger btn-sm" onClick={() => removeExam(ex.id)}>Delete</button>
               </div>
             ))}
           </div>
@@ -416,28 +287,14 @@ function AnnouncementsPanel() {
         <form onSubmit={add}>
           <div className="field">
             <label>Title</label>
-            <input
-              className="input"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              required
-            />
+            <input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
           </div>
           <div className="field">
             <label>Message</label>
-            <textarea
-              className="textarea"
-              value={form.body}
-              onChange={(e) => setForm({ ...form, body: e.target.value })}
-              required
-            />
+            <textarea className="textarea" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} required />
           </div>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, fontSize: '.88rem' }}>
-            <input
-              type="checkbox"
-              checked={form.pinned}
-              onChange={(e) => setForm({ ...form, pinned: e.target.checked })}
-            />
+            <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} />
             Pin to the top
           </label>
           <button className="btn btn-primary" type="submit">Post announcement</button>
@@ -454,7 +311,12 @@ function AnnouncementsPanel() {
           items.map((a) => (
             <div className="review-item" key={a.id}>
               <div className="rq">{a.pinned ? '📌 ' : ''}{a.title}</div>
-              <div className="ra">{a.body}</div>
+              <div className="ra">
+                {a.body}
+                <div className="note" style={{ marginTop: 4 }}>
+                  Made by TSM 2A MAYOR · {new Date(a.createdAt).toLocaleString()}
+                </div>
+              </div>
               <div style={{ marginTop: 10 }}>
                 <button className="btn btn-danger btn-sm" onClick={() => remove(a.id)}>Delete</button>
               </div>
@@ -463,75 +325,6 @@ function AnnouncementsPanel() {
         )}
       </section>
     </>
-  );
-}
-
-function ScoresPanel() {
-  const [items, setItems] = useState(null);
-
-  const load = useCallback(async () => {
-    const res = await fetch('/api/scores?limit=200', { cache: 'no-store' });
-    const data = await res.json();
-    setItems(data.scores || []);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  async function remove(id) {
-    if (!confirm('Remove this entry from the leaderboard?')) return;
-    await fetch(`/api/scores/${id}`, { method: 'DELETE' });
-    load();
-  }
-
-  async function clearAll() {
-    if (!confirm('Delete ALL leaderboard entries? This cannot be undone.')) return;
-    await fetch('/api/scores', { method: 'DELETE' });
-    load();
-  }
-
-  return (
-    <section className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--navy)' }}>Leaderboard entries</h2>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost btn-sm" onClick={load}>Refresh ↻</button>
-          <button className="btn btn-danger btn-sm" onClick={clearAll}>Clear all</button>
-        </div>
-      </div>
-
-      {items === null ? (
-        <p className="note">Loading…</p>
-      ) : items.length === 0 ? (
-        <p className="note">No scores submitted yet.</p>
-      ) : (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th>Score</th>
-              <th>%</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((s, i) => (
-              <tr key={s.id}>
-                <td>{i + 1}</td>
-                <td style={{ fontWeight: 700 }}>
-                  {s.name} {s.isAnonymous && <span className="note">(Hidden)</span>}
-                </td>
-                <td>{s.score}/{s.total}</td>
-                <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
-                <td style={{ textAlign: 'right' }}>
-                  <button className="btn btn-danger btn-sm" onClick={() => remove(s.id)}>Remove</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
   );
 }
 
@@ -546,7 +339,6 @@ function StudentsPanel() {
     setBusy(true);
     setMsg({ type: '', text: '' });
     
-    // Split by comma or new line to handle different copy-paste formats
     const list = emails.split(/[\n,]+/).map(e => e.trim()).filter(e => e.length > 0);
 
     try {
@@ -588,17 +380,83 @@ function StudentsPanel() {
         </div>
         <div className="field">
           <label>Default Password</label>
-          <input 
-            className="input" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            required 
-          />
+          <input className="input" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
         <button className="btn btn-primary" type="submit" disabled={busy}>
           {busy ? 'Creating...' : 'Create Accounts'}
         </button>
       </form>
+    </section>
+  );
+}
+
+function ScoresPanel() {
+  const [items, setItems] = useState(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch('/api/scores?limit=200', { cache: 'no-store' });
+    const data = await res.json();
+    setItems(data.scores || []);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function remove(id) {
+    if (!confirm('Remove this entry from the leaderboard?')) return;
+    await fetch(`/api/scores/${id}`, { method: 'DELETE' });
+    load();
+  }
+
+  async function clearAll() {
+    if (!confirm('Delete ALL leaderboard entries? This cannot be undone.')) return;
+    await fetch('/api/scores', { method: 'DELETE' });
+    load();
+  }
+
+  return (
+    <section className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <h2 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--navy)' }}>Leaderboard entries</h2>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost btn-sm" onClick={load}>Refresh ↻</button>
+          <button className="btn btn-danger btn-sm" onClick={clearAll}>Clear all</button>
+        </div>
+      </div>
+
+      {items === null ? (
+        <p className="note">Loading…</p>
+      ) : items.length === 0 ? (
+        <p className="note">No scores submitted yet.</p>
+      ) : (
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <table className="table" style={{ minWidth: '600px' }}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Score</th>
+                <th>%</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((s, i) => (
+                <tr key={s.id}>
+                  <td>{i + 1}</td>
+                  <td style={{ fontWeight: 700 }}>
+                    {s.name} {s.isAnonymous && <span className="note">(Hidden)</span>}
+                  </td>
+                  <td>{s.score}/{s.total}</td>
+                  <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button className="btn btn-danger btn-sm" onClick={() => remove(s.id)}>Remove</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

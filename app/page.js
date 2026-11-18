@@ -1,29 +1,45 @@
 import Link from 'next/link';
-import { listAnnouncements, listScores, listQuestions } from '@/lib/db';
+import { listAnnouncements, listScores, listQuestions, listQuizzes } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
-
-const fmt = (iso) =>
-  iso
-    ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    : '';
 
 export default async function HomePage() {
   let questions = [];
   let announcements = [];
   let top = [];
+  let quizzes = [];
 
   try {
-    [questions, announcements, top] = await Promise.all([
+    [questions, announcements, top, quizzes] = await Promise.all([
       listQuestions(),
       listAnnouncements(),
       listScores(5),
+      listQuizzes(),
     ]);
   } catch (err) {
     console.error('Home data error:', err);
   }
 
-  const topics = [...new Set(questions.map((q) => q.topic))];
+  const now = new Date();
+
+  // 1. CALCULATE UPCOMING EXAM COUNTDOWN
+  const upcomingQuizzes = quizzes
+    .filter(q => q.date && new Date(q.date) >= now)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  const nextExam = upcomingQuizzes[0];
+  const daysUntil = nextExam 
+    ? Math.ceil((new Date(nextExam.date) - now) / (1000 * 60 * 60 * 24))
+    : null;
+
+  // 2. GET RECENTLY ADDED (Sort by newest date, then grab the top 3)
+  const recentlyAdded = quizzes
+    .sort((a, b) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(b.date) - new Date(a.date); // Descending (newest first)
+    })
+    .slice(0, 3);
 
   return (
     <>
@@ -36,13 +52,29 @@ export default async function HomePage() {
         </p>
         <div className="pills">
           <span className="pill">{questions.length} Practice Items</span>
-          <span className="pill">{topics.length} Topics</span>
           <span className="pill">Instant Explanations</span>
           <span className="pill">Class Leaderboard</span>
         </div>
       </header>
 
-      {/* ANNOUNCEMENTS - NOW AT THE TOP WITH EYE-CATCHING DESIGN */}
+      {/* EXAM COUNTDOWN BANNER */}
+      {nextExam && daysUntil !== null && daysUntil >= 0 && (
+        <div className="card" style={{ background: 'var(--navy)', color: 'white', marginBottom: 24, textAlign: 'center', border: '1px solid #246b91' }}>
+          <div className="eyebrow" style={{ color: '#b8d9e9' }}>Upcoming Assessment</div>
+          <h2 style={{ margin: '8px 0', fontSize: '1.5rem' }}>{nextExam.title}</h2>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '-1px' }}>
+            {daysUntil === 0 ? 'TODAY' : `${daysUntil} Day${daysUntil === 1 ? '' : 's'} Left`}
+          </div>
+          <p style={{ margin: 0, opacity: 0.8, fontWeight: 'bold' }}>
+            {new Date(nextExam.date).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+          </p>
+          <Link href="/quiz" className="btn btn-ghost btn-sm" style={{ marginTop: 12, background: 'white' }}>
+            Review Material →
+          </Link>
+        </div>
+      )}
+
+      {/* ANNOUNCEMENTS */}
       <section className="card" style={{ marginBottom: '18px', borderLeft: '4px solid var(--blue)' }}>
         <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
           📢 Announcements
@@ -57,17 +89,40 @@ export default async function HomePage() {
                 {a.title}
               </div>
               <p style={{ margin: '4px 0', color: '#40576a', fontSize: '.95rem' }}>{a.body}</p>
-              <span className="note">{fmt(a.createdAt)}</span>
+              <span className="note">
+                Made by TSM 2A MAYOR · {new Date(a.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+              </span>
             </div>
           ))
         )}
       </section>
 
+      {/* RECENTLY ADDED */}
+      {recentlyAdded.length > 0 && (
+        <section className="card" style={{ marginBottom: '18px' }}>
+          <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.1rem' }}>✨ Recently Added Assessments</h2>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10 }}>
+            {recentlyAdded.map(q => (
+              <Link href={`/quiz/${encodeURIComponent(q.title)}`} key={q.title} style={{ 
+                minWidth: 220, padding: 12, border: '1px solid var(--line)', borderRadius: 8, textDecoration: 'none', color: 'inherit', background: '#fbfdfe'
+              }}>
+                <div className="tag" style={{ fontSize: '.7rem', marginBottom: 6 }}>{q.type || 'Mock Quiz'}</div>
+                <div style={{ fontWeight: 800, fontSize: '.95rem', color: 'var(--navy)', lineHeight: 1.2, marginBottom: 4 }}>
+                  {q.title}
+                </div>
+                <div className="note" style={{ fontSize: '.8rem' }}>{q.topic} · {q.count} items</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* NAVIGATION TILES */}
       <div className="grid">
         <Link href="/quiz" className="tile">
           <div className="icon">📝</div>
-          <h3>Practice Quizzes</h3>
-          <p>Take quizzes on specific topics with instant explanations.</p>
+          <h3>Quizzes & Mock Exams</h3>
+          <p>Take assessments on specific topics with instant explanations.</p>
         </Link>
         <Link href="/leaderboard" className="tile">
           <div className="icon">🏆</div>
@@ -81,6 +136,7 @@ export default async function HomePage() {
         </Link>
       </div>
 
+      {/* TOP 5 LEADERBOARD */}
       <section className="card">
         <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.1rem' }}>
           Top 5 this term
@@ -88,26 +144,30 @@ export default async function HomePage() {
         {top.length === 0 ? (
           <p className="note">No scores submitted yet — be the first.</p>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Score</th>
-                <th>%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {top.map((s, i) => (
-                <tr key={s.id}>
-                  <td><span className={`rank g${i + 1}`}>{i + 1}</span></td>
-                  <td style={{ fontWeight: 700 }}>{s.name}</td>
-                  <td>{s.score}/{s.total}</td>
-                  <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="table" style={{ minWidth: '500px' }}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Score</th>
+                  <th>%</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {top.map((s, i) => (
+                  <tr key={s.id}>
+                    <td><span className={`rank g${i + 1}`}>{i + 1}</span></td>
+                    <td style={{ fontWeight: 700 }}>
+                      {s.isAnonymous ? 'Anonymous Student' : s.name}
+                    </td>
+                    <td>{s.score}/{s.total}</td>
+                    <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         <div style={{ marginTop: 14 }}>
           <Link href="/leaderboard" className="btn btn-ghost btn-sm">View full leaderboard →</Link>
