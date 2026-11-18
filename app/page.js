@@ -1,9 +1,21 @@
 import Link from 'next/link';
 import { listAnnouncements, listScores, listQuestions, listQuizzes } from '@/lib/db';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
+  // 1. CHECK FOR LOGIN SESSION
+  const cookieStore = cookies();
+  const session = cookieStore.get('student_session')?.value;
+
+  if (!session) {
+    // If no session cookie exists, kick them to the login page immediately
+    redirect('/login');
+  }
+
+  // 2. FETCH DATA (Only runs if they are logged in)
   let questions = [];
   let announcements = [];
   let top = [];
