@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { addScore, listScores, rankOfScore, clearScores } from '@/lib/db';
 import { isAdmin } from '@/lib/auth';
+import { sql } from '@/lib/db';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev-only-secret-change-me');
+const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev-secret');
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,6 @@ export async function GET(req) {
 export async function POST(req) {
   const body = await req.json().catch(() => null);
   
-  // 1. Manually validate the score payload (since we removed the name requirement)
   const scoreNum = Number(body?.score);
   const totalNum = Number(body?.total);
   
@@ -25,31 +25,32 @@ export async function POST(req) {
   }
   
   const percent = Math.round((scoreNum / totalNum) * 100);
-  const durationSeconds = Number(body?.durationSeconds) >= 0 
-    ? Math.min(Math.round(Number(body.durationSeconds)), 60 * 60 * 6) 
-    : null;
+  const durationSeconds = Number(body?.durationSeconds) || null;
 
-  // 2. Verify the user is logged in by checking their cookie
   const token = req.cookies.get('student_session')?.value;
-  let user = null;
+  let userPayload = null;
   
   if (token) {
     try {
       const { payload } = await jwtVerify(token, SECRET);
-      user = payload;
-    } catch (err) {
-      // Token is invalid or expired
-    }
+      userPayload = payload;
+    } catch {}
   }
 
-  if (!user) {
+  if (!userPayload) {
     return NextResponse.json({ error: 'You must be logged in to submit a score.' }, { status: 401 });
   }
 
-  // 3. Prepare the data for the database
+  // Fetch the actual user from the database to get their display_name
+  const { rows } = await sql`SELECT display_name FROM users WHERE id = ${userPayload.userId}`;
+  const dbUser = rows[0];
+  
+  // Use display_name if it exists, otherwise fallback to the email prefix
+  const finalName = dbUser?.display_name || userPayload.email.split('@')[0];
+
   const scoreData = {
-    name: user.email.split('@')[0], // Use the email prefix as their display name
-    userId: user.userId,
+    name: finalName,
+    userId: userPayload.userId,
     isAnonymous: Boolean(body.isAnonymous),
     score: scoreNum,
     total: totalNum,
@@ -57,17 +58,13 @@ export async function POST(req) {
     durationSeconds: durationSeconds,
   };
 
-  // 4. Save to database
   const row = await addScore(scoreData);
   const rank = await rankOfScore(row);
-  
   return NextResponse.json({ score: row, rank }, { status: 201 });
 }
 
 export async function DELETE() {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
-  }
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   await clearScores();
   return NextResponse.json({ ok: true });
 }
