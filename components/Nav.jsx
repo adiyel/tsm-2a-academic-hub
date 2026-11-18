@@ -2,16 +2,24 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const LINKS = [
   { href: '/', label: 'Hub' },
-  { href: '/quiz', label: 'Practice Quiz' },
+  { href: '/quiz', label: 'Quizzes' },
   { href: '/leaderboard', label: 'Leaderboard' },
   { href: '/admin', label: 'Admin' },
 ];
 
 export default function Nav() {
   const pathname = usePathname();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if student session cookie exists
+    const hasCookie = document.cookie.includes('student_session=');
+    setIsLoggedIn(hasCookie);
+  }, []);
 
   return (
     <nav className="nav">
@@ -33,6 +41,14 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
+          {isLoggedIn && (
+            <Link
+              href="/profile"
+              className={`nav-link${pathname === '/profile' ? ' active' : ''}`}
+            >
+              Profile
+            </Link>
+          )}
         </div>
       </div>
     </nav>
