@@ -313,8 +313,17 @@ function AnnouncementsPanel() {
               <div className="rq">{a.pinned ? '📌 ' : ''}{a.title}</div>
               <div className="ra">
                 {a.body}
-                <div className="note" style={{ marginTop: 4 }}>
-                  Made by TSM 2A MAYOR · {new Date(a.createdAt).toLocaleString()}
+                
+                {/* EXACT METADATA FORMAT */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '.8rem', color: 'var(--muted)' }}>
+                  <span style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--navy)' }}>
+                    MAYOR
+                  </span>
+                  <span>·</span>
+                  <span>
+                    {new Date(a.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric' })}{' '}
+                    {new Date(a.createdAt).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                  </span>
                 </div>
               </div>
               <div style={{ marginTop: 10 }}>
