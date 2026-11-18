@@ -15,7 +15,7 @@ export default function Quiz({ topic }) {
   const [isRetryRound, setIsRetryRound] = useState(false);
 
   const startedAt = useRef(Date.now());
-  const [name, setName] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(null);
   const [submitError, setSubmitError] = useState('');
@@ -49,11 +49,6 @@ export default function Quiz({ topic }) {
       });
     return () => { alive = false; };
   }, [topic]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('tsm2a_name');
-    if (saved) setName(saved);
-  }, []);
 
   const byId = useMemo(() => {
     const map = new Map();
@@ -150,13 +145,17 @@ export default function Quiz({ topic }) {
       const res = await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, score, total: round.length, durationSeconds }),
+        body: JSON.stringify({ 
+          score, 
+          total: round.length, 
+          durationSeconds,
+          isAnonymous 
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setSubmitError(data.error || 'Could not submit your score.');
       } else {
-        localStorage.setItem('tsm2a_name', name.trim());
         setSubmitted(data);
       }
     } catch {
@@ -211,18 +210,17 @@ export default function Quiz({ topic }) {
           {!isRetryRound && !submitted && (
             <form onSubmit={submitScore} style={{ maxWidth: 360, margin: '0 auto 10px' }}>
               {submitError && <div className="error">{submitError}</div>}
-              <div className="field" style={{ textAlign: 'left' }}>
-                <label htmlFor="player-name">Your name for the leaderboard</label>
+              
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16, fontSize: '.9rem', justifyContent: 'center', cursor: 'pointer' }}>
                 <input
-                  id="player-name"
-                  className="input"
-                  value={name}
-                  maxLength={24}
-                  placeholder="e.g. Juan D."
-                  onChange={(e) => setName(e.target.value)}
-                  required
+                  type="checkbox"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  style={{ width: 16, height: 16 }}
                 />
-              </div>
+                Hide my name on the public leaderboard
+              </label>
+
               <button className="btn btn-primary" type="submit" disabled={submitting}>
                 {submitting ? 'Submitting…' : 'Submit to leaderboard'}
               </button>
