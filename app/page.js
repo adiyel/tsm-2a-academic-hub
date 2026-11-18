@@ -1,21 +1,9 @@
 import Link from 'next/link';
 import { listAnnouncements, listScores, listQuestions, listQuizzes } from '@/lib/db';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  // 1. CHECK FOR LOGIN SESSION
-  const cookieStore = cookies();
-  const session = cookieStore.get('student_session')?.value;
-
-  if (!session) {
-    // If no session cookie exists, kick them to the login page immediately
-    redirect('/login');
-  }
-
-  // 2. FETCH DATA (Only runs if they are logged in)
   let questions = [];
   let announcements = [];
   let top = [];
@@ -39,9 +27,12 @@ export default async function HomePage() {
     .filter(q => q.date && new Date(q.date) >= now)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   
-  const nextExam = upcomingQuizzes[0];
-  const daysUntil = nextExam 
-    ? Math.ceil((new Date(nextExam.date) - now) / (1000 * 60 * 60 * 24))
+  // Find ALL exams happening on the nearest date
+  const nextExamDate = upcomingQuizzes[0]?.date;
+  const nextExams = upcomingQuizzes.filter(q => q.date === nextExamDate);
+  
+  const daysUntil = nextExamDate 
+    ? Math.ceil((new Date(nextExamDate) - now) / (1000 * 60 * 60 * 24))
     : null;
 
   // 2. GET RECENTLY ADDED
@@ -69,18 +60,24 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* EXAM COUNTDOWN BANNER */}
-      {nextExam && daysUntil !== null && daysUntil >= 0 && (
+      {/* EXAM COUNTDOWN BANNER (Shows all exams on the same date) */}
+      {nextExams.length > 0 && daysUntil !== null && daysUntil >= 0 && (
         <div className="card" style={{ background: 'var(--navy)', color: 'white', marginBottom: 24, textAlign: 'center', border: '1px solid #246b91' }}>
-          <div className="eyebrow" style={{ color: '#b8d9e9' }}>Upcoming Assessment</div>
-          <h2 style={{ margin: '8px 0', fontSize: '1.5rem' }}>{nextExam.title}</h2>
+          <div className="eyebrow" style={{ color: '#b8d9e9' }}>Next Scheduled Event{daysUntil === 0 ? ' (TODAY)' : ''}</div>
+          
+          <div style={{ margin: '12px 0' }}>
+            {nextExams.map(ex => (
+              <h2 key={ex.title} style={{ margin: '8px 0', fontSize: '1.4rem' }}>{ex.title}</h2>
+            ))}
+          </div>
+
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '-1px' }}>
             {daysUntil === 0 ? 'TODAY' : `${daysUntil} Day${daysUntil === 1 ? '' : 's'} Left`}
           </div>
           <p style={{ margin: 0, opacity: 0.8, fontWeight: 'bold' }}>
-            {new Date(nextExam.date).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+            {new Date(nextExamDate).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
-          <Link href="/quiz" className="btn btn-ghost btn-sm" style={{ marginTop: 12, background: 'white' }}>
+          <Link href="/quiz" className="btn btn-ghost btn-sm" style={{ marginTop: 12, background: 'white', color: 'var(--navy)' }}>
             Review Material →
           </Link>
         </div>
@@ -102,7 +99,6 @@ export default async function HomePage() {
               </div>
               <p style={{ margin: '4px 0', color: '#40576a', fontSize: '.95rem' }}>{a.body}</p>
               
-              {/* EXACT METADATA FORMAT */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '.8rem', color: 'var(--muted)' }}>
                 <span style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--navy)' }}>
                   MAYOR
@@ -125,7 +121,7 @@ export default async function HomePage() {
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10 }}>
             {recentlyAdded.map(q => (
               <Link href={`/quiz/${encodeURIComponent(q.title)}`} key={q.title} style={{ 
-                minWidth: 220, padding: 12, border: '1px solid var(--line)', borderRadius: 8, textDecoration: 'none', color: 'inherit', background: '#fbfdfe'
+                minWidth: 220, padding: 12, border: '1px solid var(--line)', borderRadius: 8, textDecoration: 'none', color: 'inherit', background: 'var(--bg)'
               }}>
                 <div className="tag" style={{ fontSize: '.7rem', marginBottom: 6 }}>{q.type || 'Mock Quiz'}</div>
                 <div style={{ fontWeight: 800, fontSize: '.95rem', color: 'var(--navy)', lineHeight: 1.2, marginBottom: 4 }}>
