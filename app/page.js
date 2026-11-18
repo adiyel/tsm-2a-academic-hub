@@ -32,12 +32,12 @@ export default async function HomePage() {
     ? Math.ceil((new Date(nextExam.date) - now) / (1000 * 60 * 60 * 24))
     : null;
 
-  // 2. GET RECENTLY ADDED (Sort by newest date, then grab the top 3)
+  // 2. GET RECENTLY ADDED
   const recentlyAdded = quizzes
     .sort((a, b) => {
       if (!a.date) return 1;
       if (!b.date) return -1;
-      return new Date(b.date) - new Date(a.date); // Descending (newest first)
+      return new Date(b.date) - new Date(a.date);
     })
     .slice(0, 3);
 
@@ -66,7 +66,7 @@ export default async function HomePage() {
             {daysUntil === 0 ? 'TODAY' : `${daysUntil} Day${daysUntil === 1 ? '' : 's'} Left`}
           </div>
           <p style={{ margin: 0, opacity: 0.8, fontWeight: 'bold' }}>
-            {new Date(nextExam.date).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+            {new Date(nextExam.date).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
           </p>
           <Link href="/quiz" className="btn btn-ghost btn-sm" style={{ marginTop: 12, background: 'white' }}>
             Review Material →
@@ -89,9 +89,18 @@ export default async function HomePage() {
                 {a.title}
               </div>
               <p style={{ margin: '4px 0', color: '#40576a', fontSize: '.95rem' }}>{a.body}</p>
-              <span className="note">
-                Made by TSM 2A MAYOR · {new Date(a.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-              </span>
+              
+              {/* EXACT METADATA FORMAT */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '.8rem', color: 'var(--muted)' }}>
+                <span style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--navy)' }}>
+                  MAYOR
+                </span>
+                <span>·</span>
+                <span>
+                  {new Date(a.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric' })}{' '}
+                  {new Date(a.createdAt).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                </span>
+              </div>
             </div>
           ))
         )}
