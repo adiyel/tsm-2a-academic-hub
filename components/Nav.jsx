@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const LINKS = [
@@ -13,13 +13,22 @@ const LINKS = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Check if student session cookie exists
-    const hasCookie = document.cookie.includes('student_session=');
-    setIsLoggedIn(hasCookie);
-  }, [pathname]); // <--- This re-checks every time the page changes
+    // Ask the server if we have a valid session
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => setIsLoggedIn(data.loggedIn))
+      .catch(() => setIsLoggedIn(false));
+  }, [pathname]); // Re-check whenever the page changes
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setIsLoggedIn(false);
+    router.push('/login');
+  };
 
   return (
     <nav className="nav">
@@ -42,34 +51,23 @@ export default function Nav() {
             </Link>
           ))}
           
-          {/* Only show these if the user is logged in */}
+          {/* Only show Profile and Logout if logged in */}
           {isLoggedIn && (
-            <Link
-              href="/profile"
-              className={`nav-link${pathname === '/profile' ? ' active' : ''}`}
-            >
-              Profile
-            </Link>
-          )}
-          {isLoggedIn && (
-            <button
-              onClick={async () => {
-                await fetch('/api/auth/logout', { method: 'POST' });
-                window.location.href = '/login';
-              }}
-              className="nav-link"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
-            >
-              Logout
-            </button>
-          )}
-          {!isLoggedIn && (
-            <Link
-              href="/login"
-              className={`nav-link${pathname === '/login' ? ' active' : ''}`}
-            >
-              Login
-            </Link>
+            <>
+              <Link
+                href="/profile"
+                className={`nav-link${pathname === '/profile' ? ' active' : ''}`}
+              >
+                Profile
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="nav-link"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
+              >
+                Logout
+              </button>
+            </>
           )}
         </div>
       </div>
