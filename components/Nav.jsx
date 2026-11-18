@@ -19,7 +19,7 @@ export default function Nav() {
     // Check if student session cookie exists
     const hasCookie = document.cookie.includes('student_session=');
     setIsLoggedIn(hasCookie);
-  }, []);
+  }, [pathname]); // <--- This re-checks every time the page changes
 
   return (
     <nav className="nav">
@@ -41,12 +41,34 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
+          
+          {/* Only show these if the user is logged in */}
           {isLoggedIn && (
             <Link
               href="/profile"
               className={`nav-link${pathname === '/profile' ? ' active' : ''}`}
             >
               Profile
+            </Link>
+          )}
+          {isLoggedIn && (
+            <button
+              onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+              }}
+              className="nav-link"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
+            >
+              Logout
+            </button>
+          )}
+          {!isLoggedIn && (
+            <Link
+              href="/login"
+              className={`nav-link${pathname === '/login' ? ' active' : ''}`}
+            >
+              Login
             </Link>
           )}
         </div>
