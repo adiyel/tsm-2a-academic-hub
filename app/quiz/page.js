@@ -30,11 +30,17 @@ export default async function QuizMenuPage() {
     groupedByDate[dateStr].push(q);
   });
 
-  // Nearest exams for the countdown banner
-  const nextExamDate = upcoming[0]?.date;
-  const nextExams = upcoming.filter(q => q.date === nextExamDate);
-  const daysUntil = nextExamDate 
-    ? Math.ceil((new Date(nextExamDate) - now) / (1000 * 60 * 60 * 24))
+  // Countdown logic: Find the nearest DAY, then get all exams on that day
+  const nearestDateStr = upcoming[0] 
+    ? new Date(upcoming[0].date).toDateString() 
+    : null;
+  
+  const nextExams = upcoming.filter(q => 
+    new Date(q.date).toDateString() === nearestDateStr
+  );
+  
+  const daysUntil = upcoming[0] 
+    ? Math.ceil((new Date(upcoming[0].date) - now) / (1000 * 60 * 60 * 24))
     : null;
 
   return (
@@ -45,7 +51,7 @@ export default async function QuizMenuPage() {
         <p>Prepare for upcoming scheduled exams or practice anytime with general quizzes.</p>
       </header>
 
-      {/* COUNTDOWN WIDGET */}
+      {/* COUNTDOWN WIDGET (Shows ALL exams on the nearest day) */}
       {nextExams.length > 0 && daysUntil !== null && daysUntil >= 0 && (
         <div className="card" style={{ background: 'var(--navy)', color: 'white', marginBottom: 24, textAlign: 'center', border: '1px solid #246b91' }}>
           <div className="eyebrow" style={{ color: '#b8d9e9' }}>Next Scheduled Event{daysUntil === 0 ? ' (TODAY)' : ''}</div>
@@ -60,7 +66,7 @@ export default async function QuizMenuPage() {
             {daysUntil === 0 ? 'TODAY' : `${daysUntil} Day${daysUntil === 1 ? '' : 's'} Left`}
           </div>
           <p style={{ margin: 0, opacity: 0.8, fontWeight: 'bold' }}>
-            {new Date(nextExamDate).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            {new Date(nextExams[0].date).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
       )}
