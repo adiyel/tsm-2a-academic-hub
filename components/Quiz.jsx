@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
-export default function Quiz() {
+export default function Quiz({ topic }) {
   const [questions, setQuestions] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [round, setRound] = useState([]);
@@ -26,9 +26,15 @@ export default function Quiz() {
       .then((r) => r.json())
       .then((data) => {
         if (!alive) return;
-        const list = data.questions || [];
+        
+        // Filter by the selected topic if one is provided
+        const allQuestions = data.questions || [];
+        const list = topic 
+          ? allQuestions.filter(q => q.topic === topic) 
+          : allQuestions;
+
         if (list.length === 0) {
-          setLoadError('No questions are available yet. Ask your class admin to add items.');
+          setLoadError(`No questions are available for "${topic || 'this topic'}" yet.`);
           setQuestions([]);
           return;
         }
@@ -42,7 +48,7 @@ export default function Quiz() {
         setQuestions([]);
       });
     return () => { alive = false; };
-  }, []);
+  }, [topic]);
 
   useEffect(() => {
     const saved = localStorage.getItem('tsm2a_name');
@@ -170,7 +176,7 @@ export default function Quiz() {
     return (
       <section className="card">
         <div className="error">{loadError}</div>
-        <Link href="/" className="btn btn-ghost">Back to hub</Link>
+        <Link href="/quiz" className="btn btn-ghost">Back to topics</Link>
       </section>
     );
   }
@@ -237,6 +243,7 @@ export default function Quiz() {
             )}
             <button className="btn btn-ghost" onClick={retakeAll}>Retake all {questions.length}</button>
             <Link href="/leaderboard" className="btn btn-ghost">Leaderboard</Link>
+            <Link href="/quiz" className="btn btn-ghost">Other topics</Link>
           </div>
         </div>
 
