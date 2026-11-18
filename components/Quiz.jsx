@@ -23,9 +23,15 @@ export default function Quiz({ topic }) {
   
   const router = useRouter();
 
-  useEffect(() => {
+   useEffect(() => {
     let alive = true;
-    fetch('/api/questions')
+    
+    // Append the topic (which is the quiz title) to the API call
+    const url = topic 
+      ? `/api/questions?title=${encodeURIComponent(topic)}` 
+      : '/api/questions';
+
+    fetch(url)
       .then((r) => {
         if (r.status === 401) {
           router.push('/login');
@@ -36,11 +42,7 @@ export default function Quiz({ topic }) {
       .then((data) => {
         if (!alive) return;
         
-        // Filter by the selected topic if one is provided
-        const allQuestions = data.questions || [];
-        const list = topic 
-          ? allQuestions.filter(q => q.topic === topic) 
-          : allQuestions;
+        const list = data.questions || [];
 
         if (list.length === 0) {
           setLoadError(`No questions are available for "${topic || 'this topic'}" yet.`);
