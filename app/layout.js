@@ -1,6 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import Nav from '@/components/Nav';
+import { ThemeProvider } from '@/app/providers/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
@@ -13,30 +14,20 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className} style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <Nav />
-        
-        {/* Main content area */}
-        <main className="wrap" style={{ flex: 1 }}>
-          {children}
-        </main>
-        
-        {/* GLOBAL WATERMARK / FOOTER */}
-        <footer style={{
-          textAlign: 'center',
-          padding: '24px 18px',
-          color: 'var(--muted)',
-          fontSize: '.85rem',
-          borderTop: '1px solid var(--line)',
-          marginTop: '40px',
-          background: 'white'
-        }}>
-          <div style={{ fontWeight: 800, color: 'var(--navy)', marginBottom: 4 }}>
-            TSM 2A Academic Hub
-          </div>
-          <div>
-            Made by <strong>TSM 2A MAYOR</strong> · Maintained for the class of 2A
-          </div>
-        </footer>
+        <ThemeProvider>
+          <Nav />
+          <main className="wrap" style={{ flex: 1 }}>
+            {children}
+          </main>
+          <footer style={{ textAlign: 'center', padding: '24px 18px', color: 'var(--muted)', fontSize: '.85rem', borderTop: '1px solid var(--line)', marginTop: '40px', background: 'var(--paper)' }}>
+            <div style={{ fontWeight: 800, color: 'var(--navy)', marginBottom: 4 }}>
+              TSM 2A Academic Hub
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 800 }}>
+              MAYOR
+            </div>
+          </footer>
+        </ThemeProvider>
       </body>
     </html>
   );
