@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/providers/ThemeProvider';
-import Link from 'next/link';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -20,11 +19,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetch('/api/profile')
-      .then(r => {
+      .then((r) => {
         if (r.status === 401) router.push('/login');
         return r.json();
       })
-      .then(d => {
+      .then((d) => {
         if (d.user) {
           setData(d);
           setName(d.user.display_name || d.user.email.split('@')[0]);
@@ -60,6 +59,11 @@ export default function ProfilePage() {
     } else {
       setMsg({ type: 'error', text: d.error || 'Failed.' });
     }
+  }
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
   }
 
   if (!data) return <p className="note">Loading profile...</p>;
@@ -135,7 +139,7 @@ export default function ProfilePage() {
       </section>
 
       {/* STATS */}
-      <section className="card">
+      <section className="card" style={{ marginBottom: 18 }}>
         <h3 style={{ margin: '0 0 14px', color: 'var(--navy)' }}>Your Statistics</h3>
         <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ background: 'var(--bg)', padding: 16, borderRadius: 12 }}>
@@ -169,6 +173,20 @@ export default function ProfilePage() {
             </div>
           </>
         )}
+      </section>
+
+      {/* LOGOUT BUTTON */}
+      <section className="card" style={{ marginBottom: 18, textAlign: 'center', background: 'var(--redbg)', borderColor: 'var(--red)' }}>
+        <p className="note" style={{ color: 'var(--red)', marginBottom: 12 }}>
+          Logging out will clear your session. You will need to enter your credentials again.
+        </p>
+        <button 
+          onClick={handleLogout}
+          className="btn" 
+          style={{ background: 'var(--red)', color: 'white', width: '100%' }}
+        >
+          Logout
+        </button>
       </section>
     </div>
   );
