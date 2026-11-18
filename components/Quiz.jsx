@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -13,17 +14,25 @@ export default function Quiz({ topic }) {
   const [state, setState] = useState({});
   const [finished, setFinished] = useState(false);
   const [isRetryRound, setIsRetryRound] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const startedAt = useRef(Date.now());
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(null);
   const [submitError, setSubmitError] = useState('');
+  
+  const router = useRouter();
 
   useEffect(() => {
     let alive = true;
     fetch('/api/questions')
-      .then((r) => r.json())
+      .then((r) => {
+        if (r.status === 401) {
+          router.push('/login');
+          throw new Error('Unauthorized');
+        }
+        return r.json();
+      })
       .then((data) => {
         if (!alive) return;
         
@@ -42,13 +51,13 @@ export default function Quiz({ topic }) {
         setRound(list.map((q) => q.id));
         startedAt.current = Date.now();
       })
-      .catch(() => {
-        if (!alive) return;
+      .catch((err) => {
+        if (!alive || err.message === 'Unauthorized') return;
         setLoadError('Could not load questions. Please refresh the page.');
         setQuestions([]);
       });
     return () => { alive = false; };
-  }, [topic]);
+  }, [topic, router]);
 
   const byId = useMemo(() => {
     const map = new Map();
@@ -152,7 +161,14 @@ export default function Quiz({ topic }) {
           isAnonymous 
         }),
       });
+      
       const data = await res.json();
+      
+      if (res.status === 401) {
+        router.push('/login');
+        return;
+      }
+
       if (!res.ok) {
         setSubmitError(data.error || 'Could not submit your score.');
       } else {
@@ -211,17 +227,17 @@ export default function Quiz({ topic }) {
             <form onSubmit={submitScore} style={{ maxWidth: 360, margin: '0 auto 10px' }}>
               {submitError && <div className="error">{submitError}</div>}
               
-              <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16, fontSize: '.9rem', justifyContent: 'center', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 16, fontSize: '.95rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={isAnonymous}
                   onChange={(e) => setIsAnonymous(e.target.checked)}
-                  style={{ width: 16, height: 16 }}
+                  style={{ width: '18px', height: '18px' }}
                 />
                 Hide my name on the public leaderboard
               </label>
 
-              <button className="btn btn-primary" type="submit" disabled={submitting}>
+              <button className="btn btn-primary" type="submit" disabled={submitting} style={{ width: '100%' }}>
                 {submitting ? 'Submitting…' : 'Submit to leaderboard'}
               </button>
             </form>
