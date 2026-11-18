@@ -37,8 +37,6 @@ export default function LeaderboardPage() {
   }, []);
 
   useEffect(() => {
-    // We can still use localStorage to highlight their own row if we want
-    setMe(localStorage.getItem('tsm2a_name') || '');
     load();
   }, [load]);
 
@@ -61,34 +59,36 @@ export default function LeaderboardPage() {
         {scores === null ? (
           <p className="note">Loading scores…</p>
         ) : scores.length === 0 ? (
-          <p className="note">No scores yet. <Link href="/quiz">Be the first to take the quiz →</Link></p>
+          <p className="note">No scores yet. <Link href="/quiz">Be the first to take a quiz →</Link></p>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Score</th>
-                <th>%</th>
-                <th>Time</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scores.map((s, i) => (
-                <tr key={s.id} className={me && s.name === me ? 'me' : ''}>
-                  <td><span className={`rank${i < 3 ? ` g${i + 1}` : ''}`}>{i + 1}</span></td>
-                  <td style={{ fontWeight: 700, color: s.isAnonymous ? 'var(--muted)' : 'inherit', fontStyle: s.isAnonymous ? 'italic' : 'normal' }}>
-                    {s.isAnonymous ? 'Anonymous Student' : s.name}
-                  </td>
-                  <td>{s.score}/{s.total}</td>
-                  <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
-                  <td>{formatTime(s.durationSeconds)}</td>
-                  <td className="note">{formatDate(s.createdAt)}</td>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="table" style={{ minWidth: '600px' }}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Score</th>
+                  <th>%</th>
+                  <th>Time</th>
+                  <th>Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {scores.map((s, i) => (
+                  <tr key={s.id}>
+                    <td><span className={`rank${i < 3 ? ` g${i + 1}` : ''}`}>{i + 1}</span></td>
+                    <td style={{ fontWeight: 700 }}>
+                      {s.isAnonymous ? 'Anonymous Student' : s.name}
+                    </td>
+                    <td>{s.score}/{s.total}</td>
+                    <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
+                    <td>{formatTime(s.durationSeconds)}</td>
+                    <td className="note">{formatDate(s.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
