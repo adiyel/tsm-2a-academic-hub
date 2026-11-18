@@ -7,6 +7,7 @@ export default async function QuizMenuPage() {
   const quizzes = await listQuizzes();
   const now = new Date();
 
+  // Sort chronologically
   const sorted = quizzes.sort((a, b) => {
     if (!a.date && !b.date) return a.title.localeCompare(b.title);
     if (!a.date) return 1;
@@ -14,21 +15,26 @@ export default async function QuizMenuPage() {
     return new Date(a.date) - new Date(b.date);
   });
 
+  // Group by category
   const upcoming = sorted.filter(q => q.date && new Date(q.date) >= now);
   const practice = sorted.filter(q => !q.date);
   const archived = sorted.filter(q => q.date && new Date(q.date) < now);
 
+  // Group upcoming by Date String (e.g., "Tuesday, November 24")
+  const groupedByDate = {};
+  upcoming.forEach(q => {
+    const dateStr = new Date(q.date).toLocaleDateString('en-US', { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
+    if (!groupedByDate[dateStr]) groupedByDate[dateStr] = [];
+    groupedByDate[dateStr].push(q);
+  });
+
+  // Nearest exam for the countdown banner
   const nearestExam = upcoming[0];
   const daysUntil = nearestExam 
     ? Math.ceil((new Date(nearestExam.date) - now) / (1000 * 60 * 60 * 24))
     : null;
-
-  const fmtDate = (iso) => {
-    if (!iso) return 'Unscheduled';
-    return new Date(iso).toLocaleString('en-US', { 
-      weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' 
-    });
-  };
 
   return (
     <>
@@ -38,6 +44,7 @@ export default async function QuizMenuPage() {
         <p>Prepare for upcoming scheduled exams or practice anytime with general quizzes.</p>
       </header>
 
+      {/* 3. COUNTDOWN WIDGET */}
       {nearestExam && daysUntil !== null && daysUntil >= 0 && (
         <div className="card" style={{ background: 'var(--navy)', color: 'white', marginBottom: 24, textAlign: 'center', border: '1px solid #246b91' }}>
           <div className="eyebrow" style={{ color: '#b8d9e9' }}>Next Scheduled Event</div>
@@ -45,23 +52,36 @@ export default async function QuizMenuPage() {
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--gold)', letterSpacing: '-1px' }}>
             {daysUntil === 0 ? 'TODAY' : `${daysUntil} Day${daysUntil === 1 ? '' : 's'} Left`}
           </div>
-          <p style={{ margin: 0, opacity: 0.8, fontWeight: 'bold' }}>{fmtDate(nearestExam.date)}</p>
+          <p style={{ margin: 0, opacity: 0.8, fontWeight: 'bold' }}>
+            {new Date(nearestExam.date).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+          </p>
         </div>
       )}
 
+      {/* 1 & 2. SCHEDULED ASSESSMENTS (Grouped by Date Folders) */}
       {upcoming.length > 0 && (
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: '1.2rem', color: 'var(--navy)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
             📅 Scheduled Assessments
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {upcoming.map(q => (
-              <QuizCard key={q.title} quiz={q} />
+            {Object.entries(groupedByDate).map(([dateStr, exams]) => (
+              <details key={dateStr} open style={{ background: 'white', borderRadius: 12, border: '1px solid var(--line)', overflow: 'hidden' }}>
+                <summary style={{ padding: '14px 16px', cursor: 'pointer', fontWeight: 800, color: 'var(--navy)', background: '#f8fbfd', borderBottom: '1px solid var(--line)' }}>
+                  📁 {dateStr}
+                </summary>
+                <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {exams.map(q => (
+                    <QuizCard key={q.title} quiz={q} />
+                  ))}
+                </div>
+              </details>
             ))}
           </div>
         </section>
       )}
 
+      {/* UNSCHEDULED PRACTICE */}
       {practice.length > 0 && (
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: '1.2rem', color: 'var(--navy)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -75,6 +95,7 @@ export default async function QuizMenuPage() {
         </section>
       )}
 
+      {/* ARCHIVED (Past Dates) */}
       {archived.length > 0 && (
         <section>
           <details>
@@ -101,6 +122,7 @@ export default async function QuizMenuPage() {
   );
 }
 
+// QuizCard displays Title, Subject, Type, and Number of Questions
 function QuizCard({ quiz, isPractice }) {
   const isExam = quiz.type === 'Mock Examination';
   
@@ -122,11 +144,13 @@ function QuizCard({ quiz, isPractice }) {
   }
 
   return (
-    <Link href={`/quiz/${encodeURIComponent(quiz.title)}`} className="card" style={{ 
+    <Link href={`/quiz/${encodeURIComponent(quiz.title)}`} style={{ 
       display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-      padding: '16px', textDecoration: 'none', color: 'inherit',
+      padding: '12px', textDecoration: 'none', color: 'inherit',
+      border: '1px solid var(--line)', borderRadius: 10,
       borderLeft: `4px solid ${borderColor}`,
-      transition: 'transform 0.15s',
+      transition: 'background 0.15s',
+      background: 'white'
     }}>
       <div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
@@ -136,13 +160,13 @@ function QuizCard({ quiz, isPractice }) {
           <span className="note" style={{ fontWeight: 700 }}>{quiz.topic}</span>
         </div>
         
-        <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--navy)' }}>{quiz.title}</h3>
+        <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--navy)' }}>{quiz.title}</h3>
         
-        <div className="note" style={{ marginTop: 4, fontWeight: 600 }}>
-          {quiz.date 
-            ? new Date(quiz.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) 
-            : 'No scheduled date'}
-        </div>
+        {quiz.date && (
+          <div className="note" style={{ marginTop: 4, fontWeight: 600 }}>
+            🕒 {new Date(quiz.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+          </div>
+        )}
       </div>
 
       <div style={{ textAlign: 'right', minWidth: '60px' }}>
