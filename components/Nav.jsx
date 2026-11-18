@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const LINKS = [
@@ -13,22 +13,14 @@ const LINKS = [
 
 export default function Nav() {
   const pathname = usePathname();
-  const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Ask the server if we have a valid session
     fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => setIsLoggedIn(data.loggedIn))
+      .then((res) => res.json())
+      .then((data) => setIsLoggedIn(data.loggedIn))
       .catch(() => setIsLoggedIn(false));
-  }, [pathname]); // Re-check whenever the page changes
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setIsLoggedIn(false);
-    router.push('/login');
-  };
+  }, [pathname]);
 
   return (
     <nav className="nav">
@@ -51,23 +43,13 @@ export default function Nav() {
             </Link>
           ))}
           
-          {/* Only show Profile and Logout if logged in */}
           {isLoggedIn && (
-            <>
-              <Link
-                href="/profile"
-                className={`nav-link${pathname === '/profile' ? ' active' : ''}`}
-              >
-                Profile
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="nav-link"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
-              >
-                Logout
-              </button>
-            </>
+            <Link
+              href="/profile"
+              className={`nav-link${pathname === '/profile' ? ' active' : ''}`}
+            >
+              Profile
+            </Link>
           )}
         </div>
       </div>
