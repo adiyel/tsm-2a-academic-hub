@@ -20,11 +20,11 @@ export default function RootLayout({ children }) {
             {children}
           </main>
           <footer style={{ textAlign: 'center', padding: '24px 18px', color: 'var(--muted)', fontSize: '.85rem', borderTop: '1px solid var(--line)', marginTop: '40px', background: 'var(--paper)' }}>
-            <div style={{ fontWeight: 800, color: 'var(--navy)', marginBottom: 4 }}>
+            <div style={{ fontWeight: 800, color: 'var(--navy)', marginBottom: 6 }}>
               TSM 2A Academic Hub
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 800 }}>
-              MAYOR
+            <div style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>
+              Made by TSM 2A MAYOR
             </div>
           </footer>
         </ThemeProvider>
