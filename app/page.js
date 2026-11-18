@@ -27,12 +27,17 @@ export default async function HomePage() {
     .filter(q => q.date && new Date(q.date) >= now)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   
-  // Find ALL exams happening on the nearest date
-  const nextExamDate = upcomingQuizzes[0]?.date;
-  const nextExams = upcomingQuizzes.filter(q => q.date === nextExamDate);
+  // Find the nearest day, and get ALL exams on that exact day
+  const nearestDateStr = upcomingQuizzes[0] 
+    ? new Date(upcomingQuizzes[0].date).toDateString() 
+    : null;
   
-  const daysUntil = nextExamDate 
-    ? Math.ceil((new Date(nextExamDate) - now) / (1000 * 60 * 60 * 24))
+  const nextExams = upcomingQuizzes.filter(q => 
+    new Date(q.date).toDateString() === nearestDateStr
+  );
+  
+  const daysUntil = upcomingQuizzes[0] 
+    ? Math.ceil((new Date(upcomingQuizzes[0].date) - now) / (1000 * 60 * 60 * 24))
     : null;
 
   // 2. GET RECENTLY ADDED
@@ -60,7 +65,7 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* EXAM COUNTDOWN BANNER (Shows all exams on the same date) */}
+      {/* EXAM COUNTDOWN BANNER (Shows ALL exams on the nearest day) */}
       {nextExams.length > 0 && daysUntil !== null && daysUntil >= 0 && (
         <div className="card" style={{ background: 'var(--navy)', color: 'white', marginBottom: 24, textAlign: 'center', border: '1px solid #246b91' }}>
           <div className="eyebrow" style={{ color: '#b8d9e9' }}>Next Scheduled Event{daysUntil === 0 ? ' (TODAY)' : ''}</div>
@@ -75,7 +80,7 @@ export default async function HomePage() {
             {daysUntil === 0 ? 'TODAY' : `${daysUntil} Day${daysUntil === 1 ? '' : 's'} Left`}
           </div>
           <p style={{ margin: 0, opacity: 0.8, fontWeight: 'bold' }}>
-            {new Date(nextExamDate).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            {new Date(nextExams[0].date).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
           <Link href="/quiz" className="btn btn-ghost btn-sm" style={{ marginTop: 12, background: 'white', color: 'var(--navy)' }}>
             Review Material →
