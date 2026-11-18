@@ -8,15 +8,14 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState('light');
 
   useEffect(() => {
-    // Check local storage on first load
+    // Only use saved theme, defaulting to light
     const saved = localStorage.getItem('tsm2a_theme');
     if (saved) {
       setTheme(saved);
       document.documentElement.setAttribute('data-theme', saved);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      // Optional: Default to dark if OS is set to dark
-      setTheme('dark');
-      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      setTheme('light');
+      document.documentElement.setAttribute('data-theme', 'light');
     }
   }, []);
 
