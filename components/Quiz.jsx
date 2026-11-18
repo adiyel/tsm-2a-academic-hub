@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
-export default function Quiz() {
+export default function Quiz({ topic }) {
   const [questions, setQuestions] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [round, setRound] = useState([]);
@@ -13,22 +14,36 @@ export default function Quiz() {
   const [state, setState] = useState({});
   const [finished, setFinished] = useState(false);
   const [isRetryRound, setIsRetryRound] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const startedAt = useRef(Date.now());
-  const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(null);
   const [submitError, setSubmitError] = useState('');
+  
+  const router = useRouter();
 
   useEffect(() => {
     let alive = true;
     fetch('/api/questions')
-      .then((r) => r.json())
+      .then((r) => {
+        if (r.status === 401) {
+          router.push('/login');
+          throw new Error('Unauthorized');
+        }
+        return r.json();
+      })
       .then((data) => {
         if (!alive) return;
-        const list = data.questions || [];
+        
+        // Filter by the selected topic if one is provided
+        const allQuestions = data.questions || [];
+        const list = topic 
+          ? allQuestions.filter(q => q.topic === topic) 
+          : allQuestions;
+
         if (list.length === 0) {
-          setLoadError('No questions are available yet. Ask your class admin to add items.');
+          setLoadError(`No questions are available for "${topic || 'this topic'}" yet.`);
           setQuestions([]);
           return;
         }
@@ -36,18 +51,13 @@ export default function Quiz() {
         setRound(list.map((q) => q.id));
         startedAt.current = Date.now();
       })
-      .catch(() => {
-        if (!alive) return;
+      .catch((err) => {
+        if (!alive || err.message === 'Unauthorized') return;
         setLoadError('Could not load questions. Please refresh the page.');
         setQuestions([]);
       });
     return () => { alive = false; };
-  }, []);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('tsm2a_name');
-    if (saved) setName(saved);
-  }, []);
+  }, [topic, router]);
 
   const byId = useMemo(() => {
     const map = new Map();
@@ -144,13 +154,24 @@ export default function Quiz() {
       const res = await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, score, total: round.length, durationSeconds }),
+        body: JSON.stringify({ 
+          score, 
+          total: round.length, 
+          durationSeconds,
+          isAnonymous 
+        }),
       });
+      
       const data = await res.json();
+      
+      if (res.status === 401) {
+        router.push('/login');
+        return;
+      }
+
       if (!res.ok) {
         setSubmitError(data.error || 'Could not submit your score.');
       } else {
-        localStorage.setItem('tsm2a_name', name.trim());
         setSubmitted(data);
       }
     } catch {
@@ -170,7 +191,7 @@ export default function Quiz() {
     return (
       <section className="card">
         <div className="error">{loadError}</div>
-        <Link href="/" className="btn btn-ghost">Back to hub</Link>
+        <Link href="/quiz" className="btn btn-ghost">Back to topics</Link>
       </section>
     );
   }
@@ -205,19 +226,18 @@ export default function Quiz() {
           {!isRetryRound && !submitted && (
             <form onSubmit={submitScore} style={{ maxWidth: 360, margin: '0 auto 10px' }}>
               {submitError && <div className="error">{submitError}</div>}
-              <div className="field" style={{ textAlign: 'left' }}>
-                <label htmlFor="player-name">Your name for the leaderboard</label>
+              
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 16, fontSize: '.95rem', cursor: 'pointer' }}>
                 <input
-                  id="player-name"
-                  className="input"
-                  value={name}
-                  maxLength={24}
-                  placeholder="e.g. Juan D."
-                  onChange={(e) => setName(e.target.value)}
-                  required
+                  type="checkbox"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  style={{ width: '18px', height: '18px' }}
                 />
-              </div>
-              <button className="btn btn-primary" type="submit" disabled={submitting}>
+                Hide my name on the public leaderboard
+              </label>
+
+              <button className="btn btn-primary" type="submit" disabled={submitting} style={{ width: '100%' }}>
                 {submitting ? 'Submitting…' : 'Submit to leaderboard'}
               </button>
             </form>
@@ -237,6 +257,7 @@ export default function Quiz() {
             )}
             <button className="btn btn-ghost" onClick={retakeAll}>Retake all {questions.length}</button>
             <Link href="/leaderboard" className="btn btn-ghost">Leaderboard</Link>
+            <Link href="/quiz" className="btn btn-ghost">Other topics</Link>
           </div>
         </div>
 

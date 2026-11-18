@@ -133,6 +133,7 @@ function Dashboard({ onLogout }) {
         {[
           ['questions', 'Questions'],
           ['announcements', 'Announcements'],
+          ['students', 'Students'],
           ['scores', 'Leaderboard'],
         ].map(([key, label]) => (
           <button
@@ -147,6 +148,7 @@ function Dashboard({ onLogout }) {
 
       {tab === 'questions' && <QuestionsPanel />}
       {tab === 'announcements' && <AnnouncementsPanel />}
+      {tab === 'students' && <StudentsPanel />}
       {tab === 'scores' && <ScoresPanel />}
     </>
   );
@@ -516,7 +518,9 @@ function ScoresPanel() {
             {items.map((s, i) => (
               <tr key={s.id}>
                 <td>{i + 1}</td>
-                <td style={{ fontWeight: 700 }}>{s.name}</td>
+                <td style={{ fontWeight: 700 }}>
+                  {s.name} {s.isAnonymous && <span className="note">(Hidden)</span>}
+                </td>
                 <td>{s.score}/{s.total}</td>
                 <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
                 <td style={{ textAlign: 'right' }}>
@@ -527,6 +531,74 @@ function ScoresPanel() {
           </tbody>
         </table>
       )}
+    </section>
+  );
+}
+
+function StudentsPanel() {
+  const [emails, setEmails] = useState('');
+  const [password, setPassword] = useState('TSM2A-2026');
+  const [msg, setMsg] = useState({ type: '', text: '' });
+  const [busy, setBusy] = useState(false);
+
+  async function handleCreate(e) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg({ type: '', text: '' });
+    
+    // Split by comma or new line to handle different copy-paste formats
+    const list = emails.split(/[\n,]+/).map(e => e.trim()).filter(e => e.length > 0);
+
+    try {
+      const res = await fetch('/api/auth/create-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emails: list, defaultPassword: password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMsg({ type: 'success', text: `Successfully created ${data.count} accounts!` });
+        setEmails('');
+      } else {
+        setMsg({ type: 'error', text: data.error || 'Failed to create accounts.' });
+      }
+    } catch {
+      setMsg({ type: 'error', text: 'Network error.' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: 'var(--navy)' }}>Create Student Accounts</h2>
+      {msg.text && <div className={msg.type === 'error' ? 'error' : 'success'}>{msg.text}</div>}
+      
+      <form onSubmit={handleCreate}>
+        <div className="field">
+          <label>Student Emails (Paste from Google Sheet)</label>
+          <textarea 
+            className="textarea" 
+            style={{ minHeight: 150, fontFamily: 'monospace', fontSize: '.85rem' }}
+            value={emails} 
+            onChange={(e) => setEmails(e.target.value)} 
+            placeholder="juan@school.edu.ph&#10;maria@school.edu.ph"
+            required
+          />
+        </div>
+        <div className="field">
+          <label>Default Password</label>
+          <input 
+            className="input" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            required 
+          />
+        </div>
+        <button className="btn btn-primary" type="submit" disabled={busy}>
+          {busy ? 'Creating...' : 'Create Accounts'}
+        </button>
+      </form>
     </section>
   );
 }

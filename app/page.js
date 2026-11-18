@@ -27,11 +27,11 @@ export default async function HomePage() {
 
   return (
     <>
-      <header className="hero">
+      <header className="hero" style={{ marginBottom: '18px' }}>
         <div className="eyebrow">TSM 2A · Academic Hub</div>
         <h1>Study together. Track your progress. Top the leaderboard.</h1>
         <p>
-          Practice the CC4 final-term items, review every explanation, then post your
+          Practice the items, review every explanation, then post your
           first-try score and see how you rank against the class.
         </p>
         <div className="pills">
@@ -42,17 +42,32 @@ export default async function HomePage() {
         </div>
       </header>
 
-      <section className="intro">
-        <strong>How to use the hub:</strong> Open the Practice Quiz, answer each item,
-        and read the explanation that follows. Your first-try accuracy is the score you
-        submit to the leaderboard. Items you miss can be retried before moving on.
+      {/* ANNOUNCEMENTS - NOW AT THE TOP WITH EYE-CATCHING DESIGN */}
+      <section className="card" style={{ marginBottom: '18px', borderLeft: '4px solid var(--blue)' }}>
+        <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          📢 Announcements
+        </h2>
+        {announcements.length === 0 ? (
+          <p className="note">No announcements yet.</p>
+        ) : (
+          announcements.slice(0, 4).map((a) => (
+            <div key={a.id} style={{ padding: '12px 0', borderBottom: '1px solid #eef4f7' }}>
+              <div style={{ fontWeight: 800, color: 'var(--navy)', fontSize: '1.1rem' }}>
+                {a.pinned ? '📌 ' : ''}
+                {a.title}
+              </div>
+              <p style={{ margin: '4px 0', color: '#40576a', fontSize: '.95rem' }}>{a.body}</p>
+              <span className="note">{fmt(a.createdAt)}</span>
+            </div>
+          ))
+        )}
       </section>
 
       <div className="grid">
         <Link href="/quiz" className="tile">
           <div className="icon">📝</div>
-          <h3>Practice Quiz</h3>
-          <p>Queues, Stacks, Searching &amp; Sorting — with instant explanations.</p>
+          <h3>Practice Quizzes</h3>
+          <p>Take quizzes on specific topics with instant explanations.</p>
         </Link>
         <Link href="/leaderboard" className="tile">
           <div className="icon">🏆</div>
@@ -65,26 +80,6 @@ export default async function HomePage() {
           <p>Manage questions, announcements, and leaderboard entries.</p>
         </Link>
       </div>
-
-      <section className="card">
-        <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.1rem' }}>
-          Announcements
-        </h2>
-        {announcements.length === 0 ? (
-          <p className="note">No announcements yet.</p>
-        ) : (
-          announcements.slice(0, 4).map((a) => (
-            <div key={a.id} style={{ padding: '12px 0', borderBottom: '1px solid #eef4f7' }}>
-              <div style={{ fontWeight: 800, color: 'var(--navy)' }}>
-                {a.pinned ? '📌 ' : ''}
-                {a.title}
-              </div>
-              <p style={{ margin: '4px 0', color: '#40576a', fontSize: '.92rem' }}>{a.body}</p>
-              <span className="note">{fmt(a.createdAt)}</span>
-            </div>
-          ))
-        )}
-      </section>
 
       <section className="card">
         <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.1rem' }}>
