@@ -27,7 +27,6 @@ export default async function HomePage() {
     .filter(q => q.date && new Date(q.date) >= now)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   
-  // Find the nearest day, and get ALL exams on that exact day
   const nearestDateStr = upcomingQuizzes[0] 
     ? new Date(upcomingQuizzes[0].date).toDateString() 
     : null;
@@ -59,16 +58,17 @@ export default async function HomePage() {
           first-try score and see how you rank against the class.
         </p>
         <div className="pills">
-          <span className="pill">{questions.length} Practice Items</span>
+          {/* Changed to Upcoming Assessments */}
+          <span className="pill">{upcomingQuizzes.length} Upcoming Assessments</span>
           <span className="pill">Instant Explanations</span>
           <span className="pill">Class Leaderboard</span>
         </div>
       </header>
 
-      {/* EXAM COUNTDOWN BANNER (Shows ALL exams on the nearest day) */}
+      {/* EXAM COUNTDOWN BANNER */}
       {nextExams.length > 0 && daysUntil !== null && daysUntil >= 0 && (
         <div className="card" style={{ background: 'var(--navy)', color: 'white', marginBottom: 24, textAlign: 'center', border: '1px solid #246b91' }}>
-          <div className="eyebrow" style={{ color: '#b8d9e9' }}>Next Scheduled Event{daysUntil === 0 ? ' (TODAY)' : ''}</div>
+          <div className="eyebrow" style={{ color: '#b8d9e9' }}>Upcoming Assessment{daysUntil === 0 ? ' (TODAY)' : ''}</div>
           
           <div style={{ margin: '12px 0' }}>
             {nextExams.map(ex => (
@@ -122,7 +122,7 @@ export default async function HomePage() {
       {/* RECENTLY ADDED */}
       {recentlyAdded.length > 0 && (
         <section className="card" style={{ marginBottom: '18px' }}>
-          <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.1rem' }}>✨ Recently Added Assessments</h2>
+          <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.1rem' }}>✨ Recently Added</h2>
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10 }}>
             {recentlyAdded.map(q => (
               <Link href={`/quiz/${encodeURIComponent(q.title)}`} key={q.title} style={{ 
@@ -143,8 +143,9 @@ export default async function HomePage() {
       <div className="grid">
         <Link href="/quiz" className="tile">
           <div className="icon">📝</div>
-          <h3>Quizzes & Mock Exams</h3>
-          <p>Take assessments on specific topics with instant explanations.</p>
+          {/* Changed to Assessments */}
+          <h3>Assessments</h3>
+          <p>Take practice quizzes and mock exams with instant explanations.</p>
         </Link>
         <Link href="/leaderboard" className="tile">
           <div className="icon">🏆</div>
@@ -154,7 +155,7 @@ export default async function HomePage() {
         <Link href="/admin" className="tile">
           <div className="icon">🔐</div>
           <h3>Admin</h3>
-          <p>Manage questions, announcements, and leaderboard entries.</p>
+          <p>Manage exams, announcements, and leaderboard entries.</p>
         </Link>
       </div>
 
