@@ -3,11 +3,6 @@ import { listAnnouncements, listScores, listQuestions } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-const fmt = (iso) =>
-  iso
-    ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    : '';
-
 export default async function HomePage() {
   let questions = [];
   let announcements = [];
@@ -42,7 +37,7 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* ANNOUNCEMENTS - NOW AT THE TOP WITH EYE-CATCHING DESIGN */}
+      {/* ANNOUNCEMENTS */}
       <section className="card" style={{ marginBottom: '18px', borderLeft: '4px solid var(--blue)' }}>
         <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
           📢 Announcements
@@ -57,17 +52,34 @@ export default async function HomePage() {
                 {a.title}
               </div>
               <p style={{ margin: '4px 0', color: '#40576a', fontSize: '.95rem' }}>{a.body}</p>
-              <span className="note">{fmt(a.createdAt)}</span>
+              <span className="note">
+                Made by TSM 2A MAYOR · {new Date(a.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+              </span>
             </div>
           ))
         )}
       </section>
 
+      {/* RECENTLY ADDED */}
+      {questions.length > 0 && (
+        <section className="card" style={{ marginBottom: '18px' }}>
+          <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.1rem' }}>✨ Recently Added</h2>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10 }}>
+            {questions.slice(-3).reverse().map(q => (
+              <div key={q.id} style={{ minWidth: 200, padding: 12, border: '1px solid var(--line)', borderRadius: 8 }}>
+                <div className="tag" style={{ fontSize: '.7rem', marginBottom: 4 }}>{q.quizTitle || q.topic}</div>
+                <div style={{ fontWeight: 700, fontSize: '.9rem', lineHeight: 1.2 }}>{q.question.substring(0, 40)}...</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="grid">
         <Link href="/quiz" className="tile">
           <div className="icon">📝</div>
-          <h3>Practice Quizzes</h3>
-          <p>Take quizzes on specific topics with instant explanations.</p>
+          <h3>Quizzes & Mock Exams</h3>
+          <p>Take assessments on specific topics with instant explanations.</p>
         </Link>
         <Link href="/leaderboard" className="tile">
           <div className="icon">🏆</div>
@@ -88,26 +100,30 @@ export default async function HomePage() {
         {top.length === 0 ? (
           <p className="note">No scores submitted yet — be the first.</p>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Score</th>
-                <th>%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {top.map((s, i) => (
-                <tr key={s.id}>
-                  <td><span className={`rank g${i + 1}`}>{i + 1}</span></td>
-                  <td style={{ fontWeight: 700 }}>{s.name}</td>
-                  <td>{s.score}/{s.total}</td>
-                  <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="table" style={{ minWidth: '500px' }}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Score</th>
+                  <th>%</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {top.map((s, i) => (
+                  <tr key={s.id}>
+                    <td><span className={`rank g${i + 1}`}>{i + 1}</span></td>
+                    <td style={{ fontWeight: 700 }}>
+                      {s.isAnonymous ? 'Anonymous Student' : s.name}
+                    </td>
+                    <td>{s.score}/{s.total}</td>
+                    <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         <div style={{ marginTop: 14 }}>
           <Link href="/leaderboard" className="btn btn-ghost btn-sm">View full leaderboard →</Link>
