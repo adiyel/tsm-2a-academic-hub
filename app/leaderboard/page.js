@@ -37,6 +37,7 @@ export default function LeaderboardPage() {
   }, []);
 
   useEffect(() => {
+    // We can still use localStorage to highlight their own row if we want
     setMe(localStorage.getItem('tsm2a_name') || '');
     load();
   }, [load]);
@@ -77,7 +78,9 @@ export default function LeaderboardPage() {
               {scores.map((s, i) => (
                 <tr key={s.id} className={me && s.name === me ? 'me' : ''}>
                   <td><span className={`rank${i < 3 ? ` g${i + 1}` : ''}`}>{i + 1}</span></td>
-                  <td style={{ fontWeight: 700 }}>{s.name}</td>
+                  <td style={{ fontWeight: 700, color: s.isAnonymous ? 'var(--muted)' : 'inherit', fontStyle: s.isAnonymous ? 'italic' : 'normal' }}>
+                    {s.isAnonymous ? 'Anonymous Student' : s.name}
+                  </td>
                   <td>{s.score}/{s.total}</td>
                   <td style={{ fontWeight: 800, color: 'var(--navy)' }}>{s.percent}%</td>
                   <td>{formatTime(s.durationSeconds)}</td>
@@ -89,7 +92,7 @@ export default function LeaderboardPage() {
         )}
 
         <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <Link href="/quiz" className="btn btn-primary">Take the quiz →</Link>
+          <Link href="/quiz" className="btn btn-primary">Take a quiz →</Link>
           <Link href="/" className="btn btn-ghost">Back to hub</Link>
         </div>
       </section>
