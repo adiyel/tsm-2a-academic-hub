@@ -62,7 +62,7 @@ export default function LoginPage() {
       <div style={{ textAlign: 'center', fontSize: '.85rem', color: 'var(--muted)' }}>
         Don't have an account yet? <br />
         <a 
-          href="YOUR_GOOGLE_FORM_LINK_HERE" 
+          href="https://forms.gle/zTnVMzy31J4A642k9" 
           target="_blank" 
           rel="noopener noreferrer"
           style={{ color: 'var(--blue)', fontWeight: 'bold', textDecoration: 'underline' }}
