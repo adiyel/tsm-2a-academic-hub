@@ -3,9 +3,12 @@ import { jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { sql } from '@/lib/db';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
-if (!SECRET.length) {
-  throw new Error('AUTH_SECRET is not set');
+function getSecret() {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error('AUTH_SECRET is not set');
+  }
+  return new TextEncoder().encode(secret);
 }
 
 export async function PATCH(req) {
@@ -16,7 +19,7 @@ export async function PATCH(req) {
   if (!currentPassword || !newPassword) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
 
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     const { rows } = await sql`SELECT password_hash FROM users WHERE id = ${payload.userId}`;
     const user = rows[0];
 
