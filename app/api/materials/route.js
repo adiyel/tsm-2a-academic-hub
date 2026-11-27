@@ -38,35 +38,50 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const user = await getUser(req); // Gets student session (if any)
-  const admin = await isAdmin();   // Gets admin session (true/false)
+  try {
+    const user = await getUser(req);
+    const admin = await isAdmin();
 
-  // Allow if they are EITHER a logged-in student OR an admin
-  if (!user && !admin) {
-    return NextResponse.json({ error: 'You must be logged in to contribute.' }, { status: 401 });
+    // Allow if they are a student OR an admin
+    if (!user && !admin) {
+      return NextResponse.json({ error: 'You must be logged in to contribute.' }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+    }
+
+    // Force subjectId to be a Number
+    if (body.subjectId) {
+      body.subjectId = Number(body.subjectId);
+    }
+
+    const result = validateMaterialPayload(body);
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    // Safely get the name
+    let displayName = 'Admin';
+    if (user) {
+      const dbUser = await getUserById(user.userId);
+      displayName = dbUser?.name || dbUser?.username || (user.email ? user.email.split('@')[0] : 'Student');
+    }
+
+    const materialData = {
+      ...result.value,
+      type: admin ? 'official' : 'community',
+      uploadedBy: admin ? null : (user?.userId || null),
+      uploadedByName: displayName,
+    };
+
+    const created = await createMaterial(materialData);
+    return NextResponse.json({ material: created }, { status: 201 });
+
+  } catch (error) {
+    // This will catch any database errors and return them as JSON so the frontend doesn't crash
+    console.error("POST API ERROR:", error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
-
-  const body = await req.json().catch(() => null);
-  if (!body) return NextResponse.json({ error: 'Invalid body.' }, { status: 400 });
-
-  // Force subjectId to be a Number
-  if (body.subjectId) {
-    body.subjectId = Number(body.subjectId);
-  }
-
-  const result = validateMaterialPayload(body);
-  if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
-  }
-
-  // Set up the data for the database
-  const materialData = {
-    ...result.value,
-    type: admin ? 'official' : 'community',
-    uploadedBy: admin ? null : (user?.userId || null),
-    uploadedByName: admin ? 'Admin' : (user?.email ? user.email.split('@')[0] : 'Student'),
-  };
-
-  const created = await createMaterial(materialData);
-  return NextResponse.json({ material: created }, { status: 201 });
 }
