@@ -3,7 +3,10 @@ import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { sql } from '@/lib/db';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev-secret');
+const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
+if (!SECRET.length) {
+  throw new Error('AUTH_SECRET is not set');
+}
 
 export async function POST(req) {
   const { email, password } = await req.json();
