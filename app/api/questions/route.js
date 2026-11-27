@@ -19,13 +19,17 @@ export async function GET(req) {
   const all = url.searchParams.get('all') === '1';
   const title = url.searchParams.get('title');
   const examId = url.searchParams.get('examId');
-  
+
+  // Admin path: fetch everything (including hidden)
   if (all) {
-    if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+    if (!(await isAdmin())) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+    }
     const questions = await listQuestions({ activeOnly: false });
     return NextResponse.json({ questions });
   }
 
+  // Student path: must be logged in
   const token = req.cookies.get('student_session')?.value;
   let isStudent = false;
 
@@ -40,21 +44,14 @@ export async function GET(req) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
-  // Fetch all active questions
   let questions = await listQuestions({ activeOnly: true });
 
-  // Filter by examId (preferred) or fallback to title (for backward compat)
+  // Filter by examId (preferred) or fallback to title (backward compat)
   if (examId) {
     questions = questions.filter(q => q.examId === examId);
   } else if (title) {
     questions = questions.filter(q => q.quizTitle === title);
-}
-
-  return NextResponse.json({ questions });
   }
-  // If a title is provided, filter by that quiz title
-  if (title) {
-    questions = questions.filter(q => q.quizTitle === title);
 
   return NextResponse.json({ questions });
 }
