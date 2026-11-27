@@ -150,17 +150,22 @@ function Dashboard({ onLogout }) {
             {showUploadForm && (
               <form onSubmit={async (e) => {
                 e.preventDefault();
+                
                 const res = await fetch('/api/materials', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(uploadForm),
                 });
+                
                 if (res.ok) {
                   setUploadForm({ subjectId: '', term: 'Midterm', type: 'official', title: '', description: '', url: '' });
                   setShowUploadForm(false);
                   fetchMaterials(); // Refresh list
                 } else {
-                  alert('Failed to add material. Check the form.');
+                  // THIS WILL SHOW YOU THE REAL ERROR
+                  const errorData = await res.json();
+                  alert('FAILED! Reason: ' + (errorData.error || 'Unknown error'));
+                  console.log("Full Error Details:", errorData);
                 }
               }}>
                 <div className="row2">
