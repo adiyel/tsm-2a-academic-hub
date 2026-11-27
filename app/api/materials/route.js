@@ -71,6 +71,7 @@ export async function POST(req) {
 
     const materialData = {
       ...result.value,
+      term: result.value.term.toLowerCase(),
       type: admin ? 'official' : 'community',
       uploadedBy: admin ? null : (user?.userId || null),
       uploadedByName: displayName,
