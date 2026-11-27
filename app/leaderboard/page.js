@@ -13,6 +13,7 @@ function formatTime(seconds) {
 function formatDate(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('en-US', {
+    timeZone: 'Asia/Manila',
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -22,7 +23,6 @@ function formatDate(iso) {
 export default function LeaderboardPage() {
   const [scores, setScores] = useState(null);
   const [error, setError] = useState('');
-  const [me, setMe] = useState('');
 
   const load = useCallback(async () => {
     setError('');
