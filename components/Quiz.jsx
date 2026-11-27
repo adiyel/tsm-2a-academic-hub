@@ -49,8 +49,12 @@ export default function Quiz({ topic }) {
           setQuestions([]);
           return;
         }
-        setQuestions(list);
-        setRound(list.map((q) => q.id));
+        
+        // Shuffle the question order
+        const shuffled = [...list].sort(() => Math.random() - 0.5);
+        
+        setQuestions(shuffled);
+        setRound(shuffled.map((q) => q.id));
         startedAt.current = Date.now();
       })
       .catch((err) => {
