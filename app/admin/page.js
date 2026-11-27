@@ -137,62 +137,69 @@ function Dashboard({ onLogout }) {
       {tab === 'questions' && <QuestionsPanel />}
       {tab === 'subjects' && <SubjectsPanel />}
       {tab === 'materials' && (
-        <div className="card">
-          <h2 className="text-xl font-bold mb-4">Community Uploaded Materials</h2>
+        <section className="card">
+          <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: 'var(--navy)' }}>Community Uploaded Materials</h2>
           {materials.length === 0 ? (
-            <p className="text-gray-500">No materials uploaded yet.</p>
+            <p className="note">No materials uploaded yet.</p>
           ) : (
-            <div className="space-y-4">
+            <div style={{ display: 'grid', gap: 10 }}>
               {materials.map((m) => (
-                <div key={m.id} className="border p-4 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white shadow-sm">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-bold text-lg">{m.title}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${m.verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {m.verified ? 'Verified' : 'Pending Review'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{m.description || 'No description provided.'}</p>
-                    <p className="text-xs text-gray-500">
-                      Uploaded by: <span className="font-medium">{m.uploadedByName}</span> • Type: {m.type}
-                    </p>
-                    <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-sm hover:underline mt-2 inline-block">
-                      Open Link ↗
-                    </a>
+                <div className="review-item" key={m.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="rq">{m.title}</div>
+                    <span className={`tag ${m.verified ? 'on' : 'off'}`} style={{ fontSize: '0.75rem' }}>
+                      {m.verified ? 'Verified' : 'Pending Review'}
+                    </span>
                   </div>
                   
-                  <div className="flex gap-2 shrink-0">
-                    {!m.verified && (
-                      <button 
-                        onClick={async () => {
-                          await fetch(`/api/materials/${m.id}`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ verified: true })
-                          });
-                          fetchMaterials(); // Refresh list
-                        }} 
-                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm font-medium"
-                      >
-                        Approve
-                      </button>
-                    )}
-                    <button 
-                      onClick={async () => {
-                        if (!confirm('Are you sure you want to delete this material?')) return;
-                        await fetch(`/api/materials/${m.id}`, { method: 'DELETE' });
-                        fetchMaterials(); // Refresh list
-                      }} 
-                      className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded text-sm font-medium"
-                    >
-                      Delete
-                    </button>
+                  <div className="note" style={{ marginBottom: 4 }}>
+                    {m.description || 'No description provided.'}
                   </div>
+                  
+                  <div className="note" style={{ fontSize: '0.8rem', marginBottom: 4 }}>
+                    Uploaded by: <strong>{m.uploadedByName}</strong> · Type: {m.type}
+                  </div>
+      
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                    <a href={m.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--navy)', fontWeight: 600, fontSize: '.9rem', textDecoration: 'underline' }}>
+                      Open Link ↗
+                    </a>
+                    
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {!m.verified && (
+                        <button 
+                          className="btn btn-primary btn-sm" 
+                          onClick={async () => {
+                            await fetch(`/api/materials/${m.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ verified: true })
+                            });
+                            fetchMaterials();
+                          }} 
+                        >
+                          Approve
+                        </button>
+                      )}
+                      <button 
+                        className="btn btn-danger btn-sm" 
+                        onClick={async () => {
+                          if (!confirm('Are you sure you want to delete this material?')) return;
+                          await fetch(`/api/materials/${m.id}`, { method: 'DELETE' });
+                          fetchMaterials();
+                        }} 
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+      
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </section>
       )}
       {tab === 'announcements' && <AnnouncementsPanel />}
       {tab === 'students' && <StudentsPanel />}
