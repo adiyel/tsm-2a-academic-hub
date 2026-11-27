@@ -304,12 +304,13 @@ function SubjectsPanel() {
                    onChange={(e) => setForm({ ...form, code: e.target.value })} />
           </div>
         </div>
-        <div className="field">
-          <label>Color</label>
-          <input type="color" className="input" value={form.color}
-                 onChange={(e) => setForm({ ...form, color: e.target.value })}
-                 style={{ padding: 4, height: 40 }} />
-        </div>
+          <div className="field">
+            <label>Code (optional)</label>
+            <input className="input" value={form.code}
+                   placeholder="e.g. GE Elect 4"
+                   maxLength={15}
+                   onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} />
+          </div>
         <button className="btn btn-primary" type="submit" disabled={busy}>
           {busy ? 'Creating...' : 'Add Subject'}
         </button>
