@@ -4,7 +4,10 @@ import { isAdmin } from '@/lib/auth';
 import { listQuestions, createExam } from '@/lib/db';
 import { validateExamPayload } from '@/lib/validate';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev-secret');
+const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
+if (!SECRET.length) {
+  throw new Error('AUTH_SECRET is not set');
+}
 
 export const dynamic = 'force-dynamic';
 
