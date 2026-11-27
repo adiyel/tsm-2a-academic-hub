@@ -3,7 +3,13 @@ import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { sql } from '@/lib/db';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev-secret');
+function getSecret() {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error('AUTH_SECRET is not set');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export async function POST(req) {
   const { email, password } = await req.json();
@@ -19,7 +25,7 @@ export async function POST(req) {
   const token = await new SignJWT({ userId: user.id, email: user.email })
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('7d')
-    .sign(SECRET);
+    .sign(getSecret());
 
   const res = NextResponse.json({ success: true });
   res.cookies.set('student_session', token, {
