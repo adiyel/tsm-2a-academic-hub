@@ -1,17 +1,23 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { addScore, listScores, rankOfScore, clearScores } from '@/lib/db';
+import { addScore, listScores, rankOfScore, clearScores, sql } from '@/lib/db';
 import { isAdmin } from '@/lib/auth';
-import { sql } from '@/lib/db';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev-secret');
+// 1. Lazy getter for the secret
+function getSecret() {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) throw new Error('AUTH_SECRET environment variable is not set.');
+  return new TextEncoder().encode(secret);
+}
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   const raw = Number(new URL(req.url).searchParams.get('limit'));
   const limit = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 200) : 100;
-  return NextResponse.json({ scores: await listScores(limit) });
+
+  const admin = await isAdmin();
+  return NextResponse.json({ scores: await listScores(limit, { admin }) });
 }
 
 export async function POST(req) {
@@ -32,7 +38,8 @@ export async function POST(req) {
   
   if (token) {
     try {
-      const { payload } = await jwtVerify(token, SECRET);
+      // 2. Use the lazy getter here
+      const { payload } = await jwtVerify(token, getSecret());
       userPayload = payload;
     } catch {}
   }
@@ -41,11 +48,9 @@ export async function POST(req) {
     return NextResponse.json({ error: 'You must be logged in to submit a score.' }, { status: 401 });
   }
 
-  // Fetch the actual user from the database to get their display_name
   const { rows } = await sql`SELECT display_name FROM users WHERE id = ${userPayload.userId}`;
   const dbUser = rows[0];
   
-  // Use display_name if it exists, otherwise fallback to the email prefix
   const finalName = dbUser?.display_name || userPayload.email.split('@')[0];
 
   const scoreData = {
