@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { sql } from '@/lib/db';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
-if (!SECRET.length) {
-  throw new Error('AUTH_SECRET is not set');
+function getSecret() {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error('AUTH_SECRET is not set');
+  }
+  return new TextEncoder().encode(secret);
 }
 
 export async function GET(req) {
@@ -12,7 +15,7 @@ export async function GET(req) {
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     const { rows } = await sql`SELECT id, email, display_name, always_anonymous, created_at FROM users WHERE id = ${payload.userId}`;
     const user = rows[0];
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -46,7 +49,7 @@ export async function PATCH(req) {
 
   const body = await req.json();
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     await sql`
       UPDATE users 
       SET display_name = ${body.displayName}, always_anonymous = ${body.alwaysAnonymous} 
