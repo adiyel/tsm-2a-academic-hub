@@ -55,7 +55,6 @@ export async function GET(req) {
   // If a title is provided, filter by that quiz title
   if (title) {
     questions = questions.filter(q => q.quizTitle === title);
-  }
 
   return NextResponse.json({ questions });
 }
