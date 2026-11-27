@@ -27,14 +27,17 @@ export default async function ResourcesPage() {
               <div className="icon" style={{ 
                 background: s.color + '20', 
                 color: s.color,
-                display: 'flex',          // Flex helps center perfectly
-                alignItems: 'center',     // Vertical center
-                justifyContent: 'center', // Horizontal center
-                fontSize: s.code && s.code.length > 4 ? '0.65rem' : '0.85rem', // Shrink if it's 5+ chars
+                display: 'flex',          
+                alignItems: 'center',     
+                justifyContent: 'center', 
+                // SHRINK THE FONT even more for longer codes so they fit inside the fixed box
+                fontSize: s.code && s.code.length > 6 ? '0.55rem' : (s.code && s.code.length > 4 ? '0.65rem' : '0.85rem'),
                 fontWeight: 900,
-                whiteSpace: 'nowrap',     // <--- THIS STOPS IT FROM WRAPPING TO A SECOND LINE
-                padding: '0 4px',         // Little breathing room
-                textTransform: 'uppercase'
+                whiteSpace: 'nowrap',     
+                width: '48px',            // <--- FIXED WIDTH
+                height: '48px',           // <--- FIXED HEIGHT
+                borderRadius: '12px',     // <--- Looks like a nice rounded app icon
+                marginBottom: '12px'
               }}>
                 {s.code || '📖'}
               </div>
