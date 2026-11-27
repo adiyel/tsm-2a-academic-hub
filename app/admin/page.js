@@ -150,22 +150,26 @@ function Dashboard({ onLogout }) {
             {showUploadForm && (
               <form onSubmit={async (e) => {
                 e.preventDefault();
-                
-                const res = await fetch('/api/materials', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(uploadForm),
-                });
-                
-                if (res.ok) {
-                  setUploadForm({ subjectId: '', term: 'Midterm', type: 'official', title: '', description: '', url: '' });
-                  setShowUploadForm(false);
-                  fetchMaterials(); // Refresh list
-                } else {
-                  // THIS WILL SHOW YOU THE REAL ERROR
-                  const errorData = await res.json();
-                  alert('FAILED! Reason: ' + (errorData.error || 'Unknown error'));
-                  console.log("Full Error Details:", errorData);
+                try {
+                  const res = await fetch('/api/materials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(uploadForm),
+                  });
+                  
+                  if (res.ok) {
+                    setUploadForm({ subjectId: '', term: 'Midterm', type: 'official', title: '', description: '', url: '' });
+                    setShowUploadForm(false);
+                    await fetchMaterials(); // Added await so the list refreshes before the form closes
+                    alert('Material added successfully!');
+                  } else {
+                    const errorData = await res.json();
+                    alert('FAILED! Reason: ' + (errorData.error || 'Unknown error'));
+                    console.log(errorData);
+                  }
+                } catch (error) {
+                  console.error("JAVASCRIPT ERROR:", error);
+                  alert('A JavaScript error occurred: ' + error.message);
                 }
               }}>
                 <div className="row2">
