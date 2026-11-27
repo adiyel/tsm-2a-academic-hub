@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 const PUBLIC_LINKS = [
   { href: '/', label: 'Hub' },
   { href: '/quiz', label: 'Assessments' },
+  { href: '/resources', label: 'Resources' },
   { href: '/leaderboard', label: 'Leaderboard' },
 ];
 
