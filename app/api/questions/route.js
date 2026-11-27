@@ -4,9 +4,12 @@ import { isAdmin } from '@/lib/auth';
 import { listQuestions, createExam } from '@/lib/db';
 import { validateExamPayload } from '@/lib/validate';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
-if (!SECRET.length) {
-  throw new Error('AUTH_SECRET is not set');
+function getSecret() {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error('AUTH_SECRET is not set');
+  }
+  return new TextEncoder().encode(secret);
 }
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +30,7 @@ export async function GET(req) {
 
   if (token) {
     try {
-      await jwtVerify(token, SECRET);
+      await jwtVerify(token, getSecret());
       isStudent = true;
     } catch {}
   }
