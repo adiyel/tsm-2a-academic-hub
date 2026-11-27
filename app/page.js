@@ -58,7 +58,6 @@ export default async function HomePage() {
           first-try score and see how you rank against the class.
         </p>
         <div className="pills">
-          {/* Changed to Upcoming Assessments */}
           <span className="pill">{upcomingQuizzes.length} Upcoming Assessments</span>
           <span className="pill">Instant Explanations</span>
           <span className="pill">Class Leaderboard</span>
@@ -80,7 +79,14 @@ export default async function HomePage() {
             {daysUntil === 0 ? 'TODAY' : `${daysUntil} Day${daysUntil === 1 ? '' : 's'} Left`}
           </div>
           <p style={{ margin: 0, opacity: 0.8, fontWeight: 'bold' }}>
-            {new Date(nextExams[0].date).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            {new Date(nextExams[0].date).toLocaleString('en-US', { 
+              timeZone: 'Asia/Manila',
+              weekday: 'long', 
+              month: 'long', 
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit'
+            })}
           </p>
           <Link href="/quiz" className="btn btn-ghost btn-sm" style={{ marginTop: 12, background: 'white', color: 'var(--navy)' }}>
             Review Material →
@@ -110,8 +116,16 @@ export default async function HomePage() {
                 </span>
                 <span>·</span>
                 <span>
-                  {new Date(a.createdAt).toLocaleString('en-US', { month: 'long', day: 'numeric' })}{' '}
-                  {new Date(a.createdAt).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                  {new Date(a.createdAt).toLocaleString('en-US', { 
+                    timeZone: 'Asia/Manila',
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}{' '}
+                  {new Date(a.createdAt).toLocaleString('en-US', { 
+                    timeZone: 'Asia/Manila',
+                    hour: 'numeric', 
+                    minute: '2-digit' 
+                  })}
                 </span>
               </div>
             </div>
@@ -122,7 +136,7 @@ export default async function HomePage() {
       {/* RECENTLY ADDED */}
       {recentlyAdded.length > 0 && (
         <section className="card" style={{ marginBottom: '18px' }}>
-          <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.1rem' }}>✨ Recently Added</h2>
+          <h2 style={{ margin: '0 0 12px', color: 'var(--navy)', fontSize: '1.1rem' }}>✨ Recently Added Assessments</h2>
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10 }}>
             {recentlyAdded.map(q => (
               <Link href={`/quiz/${encodeURIComponent(q.title)}`} key={q.title} style={{ 
@@ -143,7 +157,6 @@ export default async function HomePage() {
       <div className="grid">
         <Link href="/quiz" className="tile">
           <div className="icon">📝</div>
-          {/* Changed to Assessments */}
           <h3>Assessments</h3>
           <p>Take practice quizzes and mock exams with instant explanations.</p>
         </Link>
