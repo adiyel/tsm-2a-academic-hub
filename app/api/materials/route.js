@@ -38,28 +38,33 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const user = await getUser(req);
-  if (!user) {
+  const user = await getUser(req); // Gets student session (if any)
+  const admin = await isAdmin();   // Gets admin session (true/false)
+
+  // Allow if they are EITHER a logged-in student OR an admin
+  if (!user && !admin) {
     return NextResponse.json({ error: 'You must be logged in to contribute.' }, { status: 401 });
   }
 
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'Invalid body.' }, { status: 400 });
 
-  // FIX: Ensure subjectId is a number before validating
-  if (body.subjectId) body.subjectId = Number(body.subjectId); 
+  // Force subjectId to be a Number
+  if (body.subjectId) {
+    body.subjectId = Number(body.subjectId);
+  }
 
   const result = validateMaterialPayload(body);
   if (result.error) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  const isAdminUser = await isAdmin();
+  // Set up the data for the database
   const materialData = {
     ...result.value,
-    type: isAdminUser ? 'official' : 'community',
-    uploadedBy: user.userId || null,
-    uploadedByName: user.name || user.email?.split('@')[0] || 'Admin', // Using the name we fixed earlier
+    type: admin ? 'official' : 'community',
+    uploadedBy: admin ? null : (user?.userId || null),
+    uploadedByName: admin ? 'Admin' : (user?.email ? user.email.split('@')[0] : 'Student'),
   };
 
   const created = await createMaterial(materialData);
