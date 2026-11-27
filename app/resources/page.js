@@ -24,7 +24,21 @@ export default async function ResourcesPage() {
         <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
           {subjects.map((s) => (
             <Link href={`/resources/${s.id}`} key={s.id} className="tile">
-              <div className="icon" style={{ background: s.color + '20', color: s.color }}>
+              <div className="icon" style={{ 
+                background: s.color + '20', 
+                color: s.color,
+                display: 'flex',          
+                alignItems: 'center',     
+                justifyContent: 'center', 
+                // SHRINK THE FONT even more for longer codes so they fit inside the fixed box
+                fontSize: s.code && s.code.length > 6 ? '0.55rem' : (s.code && s.code.length > 4 ? '0.65rem' : '0.85rem'),
+                fontWeight: 900,
+                whiteSpace: 'nowrap',     
+                width: '48px',            // <--- FIXED WIDTH
+                height: '48px',           // <--- FIXED HEIGHT
+                borderRadius: '12px',     // <--- Looks like a nice rounded app icon
+                marginBottom: '12px'
+              }}>
                 {s.code || '📖'}
               </div>
               <h3>{s.name}</h3>
