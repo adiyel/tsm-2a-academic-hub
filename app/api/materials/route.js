@@ -44,22 +44,22 @@ export async function POST(req) {
   }
 
   const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: 'Invalid body.' }, { status: 400 });
+
+  // FIX: Ensure subjectId is a number before validating
+  if (body.subjectId) body.subjectId = Number(body.subjectId); 
+
   const result = validateMaterialPayload(body);
   if (result.error) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
   const isAdminUser = await isAdmin();
-  
-  // NEW: Fetch the actual user from the database to get their real name
-  const dbUser = await getUserById(user.userId);
-  const displayName = dbUser?.name || (user.email ? user.email.split('@')[0] : 'Student');
-
   const materialData = {
     ...result.value,
     type: isAdminUser ? 'official' : 'community',
     uploadedBy: user.userId || null,
-    uploadedByName: displayName, // Using the actual name now
+    uploadedByName: user.name || user.email?.split('@')[0] || 'Admin', // Using the name we fixed earlier
   };
 
   const created = await createMaterial(materialData);
