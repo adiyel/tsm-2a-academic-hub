@@ -6,16 +6,6 @@ export default function AdminPage() {
   const [checking, setChecking] = useState(true);
   const [admin, setAdmin] = useState(false);
 
-  const [materials, setMaterials] = useState([]);
-  
-  // Fetch materials
-  const fetchMaterials = async () => {
-    const res = await fetch('/api/materials');
-    const data = await res.json();
-    setMaterials(data.materials);
-  };
-
-// Call this when the "Manage Materials" tab is clicked
   const check = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/session', { cache: 'no-store' });
@@ -30,13 +20,6 @@ export default function AdminPage() {
 
   useEffect(() => { check(); }, [check]);
 
-    // Fetch materials whenever the 'materials' tab is active
-  useEffect(() => {
-    if (tab === 'materials') {
-      fetchMaterials();
-    }
-  }, [tab]);
-  
   if (checking) return <section className="card"><p className="note">Checking access…</p></section>;
   if (!admin) return <LoginForm onSuccess={check} />;
 
@@ -99,6 +82,26 @@ function LoginForm({ onSuccess }) {
 function Dashboard({ onLogout }) {
   const [tab, setTab] = useState('questions');
 
+  const [materials, setMaterials] = useState([]);
+  
+  const fetchMaterials = async () => {
+    const res = await fetch('/api/materials');
+    const data = await res.json();
+    setMaterials(data.materials || []);
+  };
+
+  useEffect(() => {
+    if (tab === 'materials') {
+      fetchMaterials();
+    }
+  }, [tab]);
+  // END OF ADDED LINES
+
+  async function logout() {
+    await fetch('/api/admin/logout', { method: 'POST' });
+    onLogout();
+  }
+  
   async function logout() {
     await fetch('/api/admin/logout', { method: 'POST' });
     onLogout();
