@@ -23,14 +23,14 @@ export default function Quiz({ topic }) {
   
   const router = useRouter();
 
-   useEffect(() => {
+  useEffect(() => {
     let alive = true;
     
-    // Append the topic (which is the quiz title) to the API call
+    // Fetch by examId (the URL slug) or fallback to title
     const url = topic 
-      ? `/api/questions?title=${encodeURIComponent(topic)}` 
+      ? `/api/questions?examId=${encodeURIComponent(topic)}` 
       : '/api/questions';
-
+  
     fetch(url)
       .then((r) => {
         if (r.status === 401) {
@@ -42,19 +42,35 @@ export default function Quiz({ topic }) {
       .then((data) => {
         if (!alive) return;
         
-        const list = data.questions || [];
-
+        let list = data.questions || [];
+  
         if (list.length === 0) {
-          setLoadError(`No questions are available for "${topic || 'this topic'}" yet.`);
+          setLoadError(`No questions found for this exam.`);
           setQuestions([]);
           return;
         }
-        
-        // Shuffle the question order
-        const shuffled = [...list].sort(() => Math.random() - 0.5);
-        
-        setQuestions(shuffled);
-        setRound(shuffled.map((q) => q.id));
+  
+        // SHUFFLE QUESTIONS
+        list = [...list].sort(() => Math.random() - 0.5);
+  
+        // SHUFFLE OPTIONS PER QUESTION
+        list = list.map(q => {
+          const originalOptions = q.options;
+          const correctAnswer = originalOptions[q.answerIndex];
+          
+          // Shuffle options
+          const shuffled = [...originalOptions].sort(() => Math.random() - 0.5);
+          const newAnswerIndex = shuffled.indexOf(correctAnswer);
+  
+          return {
+            ...q,
+            options: shuffled,
+            answerIndex: newAnswerIndex,
+          };
+        });
+  
+        setQuestions(list);
+        setRound(list.map((q) => q.id));
         startedAt.current = Date.now();
       })
       .catch((err) => {
