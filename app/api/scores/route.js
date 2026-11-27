@@ -4,9 +4,12 @@ import { addScore, listScores, rankOfScore, clearScores } from '@/lib/db';
 import { isAdmin } from '@/lib/auth';
 import { sql } from '@/lib/db';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
-if (!SECRET.length) {
-  throw new Error('AUTH_SECRET is not set');
+function getSecret() {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error('AUTH_SECRET is not set');
+  }
+  return new TextEncoder().encode(secret);
 }
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +38,7 @@ export async function POST(req) {
   
   if (token) {
     try {
-      const { payload } = await jwtVerify(token, SECRET);
+      const { payload } = await jwtVerify(token, getSecret());
       userPayload = payload;
     } catch {}
   }
