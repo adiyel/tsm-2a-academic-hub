@@ -81,9 +81,13 @@ function LoginForm({ onSuccess }) {
 
 function Dashboard({ onLogout }) {
   const [tab, setTab] = useState('questions');
-
-  const [materials, setMaterials] = useState([]);
   
+  // --- MATERIALS STATE ---
+  const [materials, setMaterials] = useState([]);
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [uploadForm, setUploadForm] = useState({ subjectId: '', term: 'Midterm', type: 'official', title: '', description: '', url: '' });
+  const [subjectsList, setSubjectsList] = useState([]);
+
   const fetchMaterials = async () => {
     const res = await fetch('/api/materials');
     const data = await res.json();
@@ -93,15 +97,11 @@ function Dashboard({ onLogout }) {
   useEffect(() => {
     if (tab === 'materials') {
       fetchMaterials();
+      fetch('/api/subjects').then(res => res.json()).then(data => setSubjectsList(data.subjects || []));
     }
   }, [tab]);
-  // END OF ADDED LINES
+  // -----------------------
 
-  async function logout() {
-    await fetch('/api/admin/logout', { method: 'POST' });
-    onLogout();
-  }
-  
   async function logout() {
     await fetch('/api/admin/logout', { method: 'POST' });
     onLogout();
@@ -136,9 +136,68 @@ function Dashboard({ onLogout }) {
 
       {tab === 'questions' && <QuestionsPanel />}
       {tab === 'subjects' && <SubjectsPanel />}
+      
       {tab === 'materials' && (
         <section className="card">
           <h2 style={{ margin: '0 0 14px', fontSize: '1.05rem', color: 'var(--navy)' }}>Community Uploaded Materials</h2>
+          
+          {/* ADD OFFICIAL MATERIAL FORM */}
+          <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid #eee' }}>
+            <button className="btn btn-ghost" onClick={() => setShowUploadForm(!showUploadForm)} style={{ marginBottom: 12 }}>
+              {showUploadForm ? 'Cancel' : '+ Add Official Material'}
+            </button>
+
+            {showUploadForm && (
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const res = await fetch('/api/materials', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(uploadForm),
+                });
+                if (res.ok) {
+                  setUploadForm({ subjectId: '', term: 'Midterm', type: 'official', title: '', description: '', url: '' });
+                  setShowUploadForm(false);
+                  fetchMaterials(); // Refresh list
+                } else {
+                  alert('Failed to add material. Check the form.');
+                }
+              }}>
+                <div className="row2">
+                  <div className="field">
+                    <label>Subject</label>
+                    <select className="input" required value={uploadForm.subjectId} onChange={e => setUploadForm({...uploadForm, subjectId: e.target.value})}>
+                      <option value="">Select Subject...</option>
+                      {subjectsList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Term</label>
+                    <select className="input" value={uploadForm.term} onChange={e => setUploadForm({...uploadForm, term: e.target.value})}>
+                      <option value="Prelim">Prelim</option>
+                      <option value="Midterm">Midterm</option>
+                      <option value="Finals">Finals</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Title</label>
+                  <input className="input" required value={uploadForm.title} onChange={e => setUploadForm({...uploadForm, title: e.target.value})} placeholder="e.g. Chapter 1 Reviewer" />
+                </div>
+                <div className="field">
+                  <label>Description (optional)</label>
+                  <input className="input" value={uploadForm.description} onChange={e => setUploadForm({...uploadForm, description: e.target.value})} />
+                </div>
+                <div className="field">
+                  <label>Google Drive Link (PDF or Folder)</label>
+                  <input className="input" type="url" required value={uploadForm.url} onChange={e => setUploadForm({...uploadForm, url: e.target.value})} placeholder="https://drive.google.com/..." />
+                </div>
+                <button className="btn btn-primary" type="submit">Save Material</button>
+              </form>
+            )}
+          </div>
+
+          {/* EXISTING MATERIALS LIST */}
           {materials.length === 0 ? (
             <p className="note">No materials uploaded yet.</p>
           ) : (
@@ -160,7 +219,7 @@ function Dashboard({ onLogout }) {
                   <div className="note" style={{ fontSize: '0.8rem', marginBottom: 4 }}>
                     Uploaded by: <strong>{m.uploadedByName}</strong> · Type: {m.type}
                   </div>
-      
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
                     <a href={m.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--navy)', fontWeight: 600, fontSize: '.9rem', textDecoration: 'underline' }}>
                       Open Link ↗
@@ -194,13 +253,14 @@ function Dashboard({ onLogout }) {
                       </button>
                     </div>
                   </div>
-      
+
                 </div>
               ))}
             </div>
           )}
         </section>
       )}
+
       {tab === 'announcements' && <AnnouncementsPanel />}
       {tab === 'students' && <StudentsPanel />}
       {tab === 'scores' && <ScoresPanel />}
