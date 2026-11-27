@@ -18,6 +18,7 @@ export async function GET(req) {
   const url = new URL(req.url);
   const all = url.searchParams.get('all') === '1';
   const title = url.searchParams.get('title');
+  const examId = url.searchParams.get('examId');
   
   if (all) {
     if (!(await isAdmin())) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
@@ -41,7 +42,16 @@ export async function GET(req) {
 
   // Fetch all active questions
   let questions = await listQuestions({ activeOnly: true });
-  
+
+  // Filter by examId (preferred) or fallback to title (for backward compat)
+  if (examId) {
+    questions = questions.filter(q => q.examId === examId);
+  } else if (title) {
+    questions = questions.filter(q => q.quizTitle === title);
+}
+
+  return NextResponse.json({ questions });
+  }
   // If a title is provided, filter by that quiz title
   if (title) {
     questions = questions.filter(q => q.quizTitle === title);
