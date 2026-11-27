@@ -60,3 +60,28 @@ CREATE TABLE IF NOT EXISTS announcements (
   pinned BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS subjects (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  code TEXT,
+  color TEXT DEFAULT '#246b91',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS materials (
+  id SERIAL PRIMARY KEY,
+  subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE,
+  term TEXT NOT NULL CHECK (term IN ('midterm', 'finals')),
+  type TEXT NOT NULL CHECK (type IN ('official', 'community')),
+  title TEXT NOT NULL,
+  description TEXT,
+  url TEXT NOT NULL,
+  uploaded_by INTEGER REFERENCES users(id),
+  uploaded_by_name TEXT,
+  verified BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS materials_lookup_idx 
+  ON materials (subject_id, term, type, created_at DESC);
