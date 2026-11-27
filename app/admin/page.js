@@ -6,6 +6,16 @@ export default function AdminPage() {
   const [checking, setChecking] = useState(true);
   const [admin, setAdmin] = useState(false);
 
+  const [materials, setMaterials] = useState([]);
+  
+  // Fetch materials
+  const fetchMaterials = async () => {
+    const res = await fetch('/api/materials');
+    const data = await res.json();
+    setMaterials(data.materials);
+  };
+
+// Call this when the "Manage Materials" tab is clicked
   const check = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/session', { cache: 'no-store' });
@@ -103,6 +113,7 @@ function Dashboard({ onLogout }) {
         {[
           ['questions', 'Exams & Quizzes'],
           ['subjects', 'Subjects & Resources'],
+          ['materials', 'Manage Materials'],
           ['announcements', 'Announcements'],
           ['students', 'Students'],
           ['scores', 'Leaderboard'],
