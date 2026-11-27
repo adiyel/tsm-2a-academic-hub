@@ -3,7 +3,10 @@ import { jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { sql } from '@/lib/db';
 
-const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev-secret');
+const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
+if (!SECRET.length) {
+  throw new Error('AUTH_SECRET is not set');
+}
 
 export async function PATCH(req) {
   const token = req.cookies.get('student_session')?.value;
