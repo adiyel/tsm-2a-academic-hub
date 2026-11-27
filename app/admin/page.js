@@ -174,7 +174,6 @@ function Dashboard({ onLogout }) {
                   <div className="field">
                     <label>Term</label>
                     <select className="input" value={uploadForm.term} onChange={e => setUploadForm({...uploadForm, term: e.target.value})}>
-                      <option value="Prelim">Prelim</option>
                       <option value="Midterm">Midterm</option>
                       <option value="Finals">Finals</option>
                     </select>
